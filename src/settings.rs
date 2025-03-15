@@ -7,7 +7,7 @@ use serde::Deserialize;
 #[derive(Debug, Default, Deserialize, PartialEq, Eq, Clone)]
 pub struct Settings {
     pub family_calendar_url: String,
-    pub family_calendar_offset_days: u16,
+    pub family_calendar_offset_days: u64,
 }
 impl Settings {
     pub fn new(path: &Path) -> Result<Self, ServiceConfigurationError> {
