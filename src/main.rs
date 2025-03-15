@@ -28,10 +28,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let settings = Settings::new(config_path.as_path())?;
 
+    let addr = settings.server_listen_at.parse::<SocketAddr>().expect(
+        "Expecting configuration `server_listen_at` to be in the format like `127.0.0.1:8042`.",
+    );
+
     let app_state = AppState::new(settings);
 
     // Define the address and port to listen on
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     tokio::spawn(spawn_web_server(addr, app_state));
 
     signal::ctrl_c().await?;
