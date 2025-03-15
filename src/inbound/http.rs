@@ -1,9 +1,9 @@
-use axum::Router;
+use axum::{routing::get, Router};
 use log::info;
 use std::net::SocketAddr;
 use tower_http::services::ServeDir;
 
-use crate::settings::Settings;
+use crate::{inbound::handlers::calendar_handler, settings::Settings};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -21,6 +21,7 @@ pub async fn spawn_web_server(
     state: AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let app = Router::new()
+        .route("/", get(calendar_handler))
         .nest_service("/assets", ServeDir::new("output"))
         .nest_service("/public", ServeDir::new("public"))
         .with_state(state);
