@@ -20,3 +20,5 @@ log = { version = "0.4.26", default-features = false }
 env_logger = { version = "0.11.7", features = ["auto-color"] }
 config = { version = "0.15.11", features = ["toml"] }
 clap = "4.5.32"
+askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.4.0"
