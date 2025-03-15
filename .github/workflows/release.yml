@@ -1,0 +1,127 @@
+name: Build/Pub Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          # linux
+          - build: linux-64-gnu
+            os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            sys-type: linux
+          # Macos
+          - build: aarch64-apple
+            os: macos-latest
+            target: aarch64-apple-darwin
+            sys-type: macos
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install linux needed deps
+        if: matrix.sys-type == 'linux'
+        shell: bash
+        run: |
+          if [ "${{ matrix.build }}" = "linux-aarch64-gnu" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+      - name: Running cargo build
+        shell: bash
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Make artifact folder
+        shell: bash
+        run: |
+          binary_name="fluxa"
+
+          dirname="$binary_name-${{ matrix.target }}"
+          mkdir "$dirname"
+          mv "target/${{ matrix.target }}/release/$binary_name" "$dirname/"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: fluxa-${{ matrix.target }}
+          path: fluxa-${{ matrix.target }}
+
+  release:
+    needs: [build]
+    name: Publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download changelog file(s)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Copy files & build archives
+        shell: bash
+        run: |
+          for dir in */; do
+            if [ -d "$dir" ]; then
+              dir_name="${dir%/}"
+              cp "config.sample.toml" "LICENSE" "CHANGELOG.md" "$dir_name"
+              tar -cJf "${dir_name}.tar.xz" -C "$dir_name" .
+              echo "Compressed ${dir_name}.tar.xz"
+            fi
+          done
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          md5sum_file() {
+            local file=$1
+            local checksum=$(md5sum "$file" | awk '{print $1}')
+            local filename=$(basename "$file")
+            echo "$checksum : $filename" >> checksums.txt
+          }
+          rm -f checksums.txt
+          find . -type f -name '*.xz' | while read file; do
+            md5sum_file "$file"
+          done
+
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@v3
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: RELEASE_NOTE.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      # - name: Show directory structure
+      #   run: ls -R
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          make_latest: true
+          body: ${{ steps.git-cliff.outputs.content }}
+          files: |
+            fluxa*
+            checksums.txt
