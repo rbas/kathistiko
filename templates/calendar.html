@@ -1,4 +1,37 @@
 {% extends "base.html" %}
 {% block body %}
-Tu
+<div class="dashboard">
+        <div class="container">
+          <h1>Trash</h1>
+          {% if let Some(trash_events) = periodical_items %}
+            {% for item in trash_events %}
+              <div class="box">
+                <h4>{{ item.start_date }}</h4>
+                {{ item.summary }}
+              </div>
+            {% endfor %}
+          {% endif %}
+          </div>
+        <div class="container">
+          <h1 class="date"><span>{{ current_date.day() }}</span> {{ current_date.weekday() }}</h1>
+          <h3 class="date">{{ self.get_month_name() }}</h3>
+          {% if let Some(events) = calendar_items %}
+            {% for event in events %}
+              <div class="box">
+                <h4>{{ event.summary }}</h4>
+                {{ event.start_date }}
+
+                {% if let Some(end_date) = event.end_date %}
+                  &nbsp;-&nbsp;{{ end_date }}
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <div class="container">
+          <div class="">
+          <h4>Last update</h4>
+          <div>{{current_date}}</div>
+        </div>
+    </div>
 {% endblock %}
