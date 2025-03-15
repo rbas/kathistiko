@@ -1,0 +1,137 @@
+use chrono::{Datelike, NaiveDate, Weekday};
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct PeriodicalItem {
+    pub summary: String,
+    pub start_date: NaiveDate,
+}
+
+impl PeriodicalItem {
+    fn new(summary: String, start_date: NaiveDate) -> Self {
+        Self {
+            summary,
+            start_date,
+        }
+    }
+}
+
+pub fn generate_periodical_events(date: NaiveDate) -> Option<Vec<PeriodicalItem>> {
+    let week_number = date.iso_week().week();
+
+    let mut items = vec![];
+
+    if week_number % 2 == 0 {
+        let start_date = get_weekday_of_week(date, Weekday::Thu);
+        let plastic = PeriodicalItem::new("General".to_string(), start_date);
+        items.push(plastic);
+    } else {
+        let start_date = get_weekday_of_week(date, Weekday::Tue);
+        let general = PeriodicalItem::new("Plastic".to_string(), start_date);
+
+        items.push(general);
+    }
+
+    let paper_start_date = NaiveDate::from_ymd_opt(2025, 1, 16).unwrap();
+    let weeks_since_start = date.signed_duration_since(paper_start_date).num_weeks();
+
+    if weeks_since_start >= 0 && weeks_since_start % 4 == 0 {
+        let start_date = get_weekday_of_week(date, Weekday::Thu);
+        let paper = PeriodicalItem::new("Paper".to_string(), start_date);
+        items.push(paper)
+    }
+
+    if items.is_empty() {
+        None
+    } else {
+        Some(items)
+    }
+}
+
+fn get_weekday_of_week(date: NaiveDate, weekday: Weekday) -> NaiveDate {
+    let current_weekday = date.weekday();
+    let days_diff =
+        weekday.num_days_from_monday() as i64 - current_weekday.num_days_from_monday() as i64;
+
+    date + chrono::Duration::days(days_diff)
+}
+
+#[cfg(test)]
+mod test {
+    use chrono::{NaiveDate, Weekday};
+
+    use crate::calendar::trash_events::{
+        generate_periodical_events, get_weekday_of_week, PeriodicalItem,
+    };
+
+    #[test]
+    fn generate_plastic_event() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 24).unwrap();
+
+        let expected = PeriodicalItem::new(
+            "Plastic".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 25).unwrap(),
+        );
+        let result = generate_periodical_events(date);
+
+        assert!(result.is_some());
+
+        let items = result.unwrap();
+        assert!(items.len() == 1);
+        assert_eq!(expected, items[0]);
+    }
+
+    #[test]
+    fn generate_general_event() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 22).unwrap();
+
+        let expected = PeriodicalItem::new(
+            "General".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 20).unwrap(),
+        );
+        let result = generate_periodical_events(date);
+
+        assert!(result.is_some());
+
+        let items = result.unwrap();
+        assert!(items.len() == 1);
+        assert_eq!(expected, items[0]);
+    }
+
+    #[test]
+    fn generate_plastic_and_paper_event() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 15).unwrap();
+
+        let plastic_item = PeriodicalItem::new(
+            "Plastic".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 11).unwrap(),
+        );
+        let paper_item = PeriodicalItem::new(
+            "Paper".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 13).unwrap(),
+        );
+        let result = generate_periodical_events(date);
+
+        assert!(result.is_some());
+
+        let items = result.unwrap();
+        assert!(items.len() == 2);
+        assert_eq!(plastic_item, items[0]);
+        assert_eq!(paper_item, items[1]);
+    }
+
+    #[test]
+    fn expect_week_day_after_the_current_date() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 24).unwrap();
+        let expected = NaiveDate::from_ymd_opt(2025, 3, 25).unwrap();
+        let actual = get_weekday_of_week(date, Weekday::Tue);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn expect_week_day_before_the_current_date() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 15).unwrap();
+        let expected = NaiveDate::from_ymd_opt(2025, 3, 12).unwrap();
+        let actual = get_weekday_of_week(date, Weekday::Wed);
+        assert_eq!(expected, actual);
+    }
+}
