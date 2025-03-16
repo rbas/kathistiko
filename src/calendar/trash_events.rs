@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate, Weekday};
+use chrono::{Datelike, Local, NaiveDate, Weekday};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PeriodicalItem {
@@ -12,6 +12,30 @@ impl PeriodicalItem {
             summary,
             start_date,
         }
+    }
+    // Method to get the name of the weekday for start_date
+    pub fn week_day(&self) -> String {
+        // Use NaiveDate's weekday() method, and map it to a string
+        self.start_date.format("%A").to_string() // %A is the full weekday name (e.g., "Monday")
+    }
+
+    // Method to check if start_date is today
+    pub fn is_today(&self) -> bool {
+        let today = Local::now().date_naive();
+        // Compare start_date with today's date
+        self.start_date == today
+    }
+
+    // Method to check if start_date is tomorrow
+    pub fn is_tomorrow(&self) -> bool {
+        let today = Local::now().date_naive();
+        // Compare start_date with tomorrow's date
+        self.start_date == (today + chrono::Duration::days(1))
+    }
+
+    pub fn is_old(&self) -> bool {
+        let today = Local::now().date_naive();
+        self.start_date < today
     }
 }
 

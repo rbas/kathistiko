@@ -21,6 +21,43 @@ impl Item {
             end_date,
         }
     }
+    pub fn start_date_week_day(&self) -> String {
+        self.start_date.format("%A").to_string()
+    }
+
+    // Method to check if start_date is today
+    pub fn start_date_day(&self) -> String {
+        self.start_date.format("%d").to_string()
+    }
+
+    // Method to check if start_date is today
+    pub fn start_date_month(&self) -> String {
+        self.start_date.format("%m").to_string()
+    }
+
+    pub fn end_date_week_day(&self) -> Option<String> {
+        self.end_date
+            .map(|end_date| end_date.format("%A").to_string())
+    }
+
+    pub fn end_date_day(&self) -> Option<String> {
+        self.end_date
+            .map(|end_date| end_date.format("%d").to_string())
+    }
+
+    pub fn end_date_month(&self) -> Option<String> {
+        self.end_date
+            .map(|end_date| end_date.format("%m").to_string())
+    }
+
+    pub fn is_day_event(&self) -> bool {
+        if let Some(end_date) = self.end_date {
+            self.start_date == end_date
+        } else {
+            // If item does not have end it is most likely one day event
+            true
+        }
+    }
 }
 
 impl From<&Event> for Item {

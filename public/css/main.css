@@ -35,7 +35,6 @@ h1, h2, h3 {
 .container > div {
 }
 
-
 .box {
   padding: 10px;
   border: 1px solid #000;
@@ -50,6 +49,7 @@ h1, h2, h3 {
 
 .box h4 {
   margin-bottom: 3px;
+  font-size: 1.1em;
 }
 
 .date {

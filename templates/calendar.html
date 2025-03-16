@@ -5,10 +5,18 @@
           <h1>Trash</h1>
           {% if let Some(trash_events) = periodical_items %}
             {% for item in trash_events %}
-              <div class="box">
-                <h4>{{ item.start_date }}</h4>
-                {{ item.summary }}
-              </div>
+              {% if item.is_old() == false %}
+                <div class="box {% if item.is_today() %}attention{% endif %}">
+                    {% if item.is_today() %}
+                      <h4>Today</h4>
+                    {% else if item.is_tomorrow() %}
+                      <h4>Tomorrow</h4>
+                    {% else %}
+                      <h4>{{ item.week_day() }}</h4>
+                    {% endif %}
+                    {{ item.summary }}
+                </div>
+              {% endif %}
             {% endfor %}
           {% endif %}
           </div>
@@ -19,19 +27,17 @@
             {% for event in events %}
               <div class="box">
                 <h4>{{ event.summary }}</h4>
-                {{ event.start_date }}
-
-                {% if let Some(end_date) = event.end_date %}
-                  &nbsp;-&nbsp;{{ end_date }}
+                {{event.start_date_week_day()}}&nbsp;<b>{{ event.start_date_day() }}</b>.{{ event.start_date_month()}}.&nbsp;
+                {% if !event.is_day_event() %}
+                  {% if event.end_date.is_some() %}
+                  &ndash;&nbsp;<b>{{ event.end_date_day().unwrap() }}</b>.{{ event.end_date_month().unwrap()}}.&nbsp;
+                  {% endif %}
                 {% endif %}
               </div>
             {% endfor %}
           {% endif %}
         </div>
         <div class="container">
-          <div class="">
-          <h4>Last update</h4>
-          <div>{{current_date}}</div>
         </div>
     </div>
 {% endblock %}
