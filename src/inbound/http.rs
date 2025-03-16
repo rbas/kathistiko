@@ -20,10 +20,10 @@ pub async fn spawn_web_server(
     socket_addr: SocketAddr,
     state: AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let public_folder = state.settings.clone().public_folder;
     let app = Router::new()
         .route("/", get(calendar_handler))
-        .nest_service("/assets", ServeDir::new("output"))
-        .nest_service("/public", ServeDir::new("public"))
+        .nest_service("/public", ServeDir::new(public_folder))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(&socket_addr).await?;

@@ -1,4 +1,5 @@
 family_calendar_url = "<calendar_url>"
 family_calendar_offset_days = 15
 tmp_folder = "/Users/rbas/projects/kathistiko/dashboard/fixtures"
+public_folder = "/Users/rbas/projects/kathistiko/dashboard/public"
 server_listen_at = "0.0.0.0:8000"
