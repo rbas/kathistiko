@@ -38,10 +38,7 @@ impl From<&Event> for Item {
     }
 }
 
-async fn download(url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // let url = "https://p114-caldav.icloud.com/published/2/MTE3OTA4NTk4NTgxMTc5MJObCer765x2961wzsaODjbNjUqDqKwAqv14wWt44uuvywEQKiilkxtMjkoaREvYWMdwuH3hbelMjF1172MzQNU"; // Replace with your WebCal URL
-    // let url = "http://p114-caldav.icloud.com/published/2/MTE3OTA4NTk4NTgxMTc5MJObCer765x2961wzsaODjbUjEvPjLBMgv_O6bi0BWbBpyj13Be93p8OK3g89Bd4ufctX_NG8pGVCEaLfoDpawY";
-
+async fn download(url: &str, calendar_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Make the request to the WebCal URL
     let response = reqwest::get(url).await?;
 
@@ -51,7 +48,7 @@ async fn download(url: &str) -> Result<(), Box<dyn std::error::Error>> {
         let calendar_data = response.bytes().await?;
 
         // Create or open the file where the calendar will be saved
-        let mut file = File::create("fixtures/family.ics")?;
+        let mut file = File::create(calendar_path)?;
 
         // Write the bytes to the file
         file.write_all(&calendar_data)?;
@@ -113,10 +110,11 @@ pub async fn get_calendar_items(
     url: &str,
     date: NaiveDate,
     offset: Days,
+    calendar_path: &str,
 ) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
-    download(url).await?;
+    download(url, calendar_path).await?;
 
-    let contents = read_to_string("fixtures/family.ics")?;
+    let contents = read_to_string(calendar_path)?;
 
     let parsed_calendar: Calendar = contents.parse()?;
 
