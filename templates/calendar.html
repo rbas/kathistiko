@@ -30,7 +30,7 @@
                 {{event.start_date_week_day()}}&nbsp;<b>{{ event.start_date_day() }}</b>.{{ event.start_date_month()}}.&nbsp;
                 {% if !event.is_day_event() %}
                   {% if event.end_date.is_some() %}
-                  &ndash;&nbsp;<b>{{ event.end_date_day().unwrap() }}</b>.{{ event.end_date_month().unwrap()}}.&nbsp;
+                  <span>&ndash;&nbsp;<b>{{ event.end_date_day().unwrap() }}</b>.{{ event.end_date_month().unwrap()}}.&nbsp;</span>
                   <span class="number-of-days">{{ event.number_of_days() }}&nbsp;days</span>
                   {% endif %}
                 {% endif %}

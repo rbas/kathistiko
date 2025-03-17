@@ -1,5 +1,10 @@
 * {
-   font-family: 'Open Sans', sans-serif;
+  font-optical-sizing: auto;
+
+     font-family: "Oxanium", sans-serif;
+
+  /* font-weight: 400; */
+  /* font-style: normal; */
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: none; /* Disable anti-aliasing */
@@ -12,6 +17,8 @@ body, html {
     background-color: #f4f4f4;
 }
 h1, h2, h3 {
+     font-family: "Orbitron", sans-serif;
+
   font-weight: 700;
   text-align: right;
 }
@@ -41,7 +48,9 @@ h1, h2, h3 {
   padding: 10px;
   border: 1px solid #000;
   border-radius: 5px;
-    margin-bottom: 5px;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+  font-weight: bold;
 }
 
 .box b {
@@ -55,7 +64,8 @@ h1, h2, h3 {
 
 .box h4 {
   margin-bottom: 3px;
-  font-size: 1.1em;
+  font-size: 1.3em;
+  font-weight: bold;
 }
 
 .date {
@@ -66,6 +76,7 @@ h1.date {
 }
 h3.date {
   font-weight: normal;
+  font-size: 1.5em;
 }
 
 h1.date span{
@@ -73,5 +84,5 @@ h1.date span{
 }
 
 .number-of-days {
-  margin-left: 7em;
+  margin-left: 5em;
 }
