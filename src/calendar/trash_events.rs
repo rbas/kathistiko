@@ -46,11 +46,11 @@ pub fn generate_periodical_events(date: NaiveDate) -> Option<Vec<PeriodicalItem>
 
     if week_number % 2 == 0 {
         let start_date = get_weekday_of_week(date, Weekday::Thu);
-        let plastic = PeriodicalItem::new("General".to_string(), start_date);
+        let plastic = PeriodicalItem::new("General waste".to_string(), start_date);
         items.push(plastic);
     } else {
         let start_date = get_weekday_of_week(date, Weekday::Tue);
-        let general = PeriodicalItem::new("Plastic".to_string(), start_date);
+        let general = PeriodicalItem::new("Plastic waste".to_string(), start_date);
 
         items.push(general);
     }
@@ -72,7 +72,7 @@ pub fn generate_periodical_events(date: NaiveDate) -> Option<Vec<PeriodicalItem>
     // Check if we are on the 4th week
     if weeks_since_start % 4 == 0 {
         let start_date = get_weekday_of_week(date, Weekday::Thu);
-        let paper = PeriodicalItem::new("Paper".to_string(), start_date);
+        let paper = PeriodicalItem::new("Paper waste".to_string(), start_date);
         items.push(paper)
     }
 
@@ -104,7 +104,7 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2025, 3, 24).unwrap();
 
         let expected = PeriodicalItem::new(
-            "Plastic".to_string(),
+            "Plastic waste".to_string(),
             NaiveDate::from_ymd_opt(2025, 3, 25).unwrap(),
         );
         let result = generate_periodical_events(date);
@@ -121,7 +121,7 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2025, 3, 22).unwrap();
 
         let expected = PeriodicalItem::new(
-            "General".to_string(),
+            "General waste".to_string(),
             NaiveDate::from_ymd_opt(2025, 3, 20).unwrap(),
         );
         let result = generate_periodical_events(date);
@@ -138,7 +138,7 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2025, 3, 17).unwrap();
 
         let expected = PeriodicalItem::new(
-            "General".to_string(),
+            "General waste".to_string(),
             NaiveDate::from_ymd_opt(2025, 3, 20).unwrap(),
         );
         let result = generate_periodical_events(date);
@@ -155,11 +155,11 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2026, 2, 11).unwrap();
 
         let plastic_item = PeriodicalItem::new(
-            "Plastic".to_string(),
+            "Plastic waste".to_string(),
             NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
         );
         let paper_item = PeriodicalItem::new(
-            "Paper".to_string(),
+            "Paper waste".to_string(),
             NaiveDate::from_ymd_opt(2026, 2, 12).unwrap(),
         );
         let result = generate_periodical_events(date);
@@ -177,11 +177,11 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2025, 3, 15).unwrap();
 
         let plastic_item = PeriodicalItem::new(
-            "Plastic".to_string(),
+            "Plastic waste".to_string(),
             NaiveDate::from_ymd_opt(2025, 3, 11).unwrap(),
         );
         let paper_item = PeriodicalItem::new(
-            "Paper".to_string(),
+            "Paper waste".to_string(),
             NaiveDate::from_ymd_opt(2025, 3, 13).unwrap(),
         );
         let result = generate_periodical_events(date);
