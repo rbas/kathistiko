@@ -23,7 +23,7 @@ h1, h2, h3 {
     position: absolute;
     top: 0;
     left: 0;
-    /*background-color: #ff00ff;*/
+    background-color: #fff;
 }
 
 .container {
@@ -64,4 +64,8 @@ h3.date {
 
 h1.date span{
   font-weight: bold;
+}
+
+.number-of-days {
+  margin-left: 7em;
 }

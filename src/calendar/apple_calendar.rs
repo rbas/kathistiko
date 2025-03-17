@@ -58,6 +58,16 @@ impl Item {
             true
         }
     }
+
+    pub fn number_of_days(&self) -> i64 {
+        match self.end_date {
+            Some(end_date) => {
+                let days = end_date - self.start_date;
+                days.num_days()
+            }
+            None => 0,
+        }
+    }
 }
 
 impl From<&Event> for Item {

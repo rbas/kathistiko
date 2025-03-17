@@ -31,6 +31,7 @@
                 {% if !event.is_day_event() %}
                   {% if event.end_date.is_some() %}
                   &ndash;&nbsp;<b>{{ event.end_date_day().unwrap() }}</b>.{{ event.end_date_month().unwrap()}}.&nbsp;
+                  <span class="number-of-days">{{ event.number_of_days() }}&nbsp;days</span>
                   {% endif %}
                 {% endif %}
               </div>
