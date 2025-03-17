@@ -56,9 +56,21 @@ pub fn generate_periodical_events(date: NaiveDate) -> Option<Vec<PeriodicalItem>
     }
 
     let paper_start_date = NaiveDate::from_ymd_opt(2025, 1, 16).unwrap();
-    let weeks_since_start = date.signed_duration_since(paper_start_date).num_weeks();
+    let paper_start_week = paper_start_date.iso_week().week();
 
-    if weeks_since_start >= 0 && weeks_since_start % 4 == 0 {
+    // Get the calendar week of the current date
+    let current_week = date.iso_week().week();
+
+    // Calculate the difference in weeks based on calendar weeks
+    let weeks_since_start = if current_week >= paper_start_week {
+        current_week - paper_start_week
+    } else {
+        // If the current week is before the paper_start_date, adjust accordingly.
+        (current_week + 52) - paper_start_week
+    };
+
+    // Check if we are on the 4th week
+    if weeks_since_start % 4 == 0 {
         let start_date = get_weekday_of_week(date, Weekday::Thu);
         let paper = PeriodicalItem::new("Paper".to_string(), start_date);
         items.push(paper)
@@ -119,6 +131,45 @@ mod test {
         let items = result.unwrap();
         assert!(items.len() == 1);
         assert_eq!(expected, items[0]);
+    }
+
+    #[test]
+    fn expect_only_general() {
+        let date = NaiveDate::from_ymd_opt(2025, 3, 17).unwrap();
+
+        let expected = PeriodicalItem::new(
+            "General".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 20).unwrap(),
+        );
+        let result = generate_periodical_events(date);
+
+        assert!(result.is_some());
+
+        let items = result.unwrap();
+        assert!(items.len() == 1);
+        assert_eq!(expected, items[0]);
+    }
+
+    #[test]
+    fn expect_plastic_and_paper_event_is_future_year() {
+        let date = NaiveDate::from_ymd_opt(2026, 2, 11).unwrap();
+
+        let plastic_item = PeriodicalItem::new(
+            "Plastic".to_string(),
+            NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
+        );
+        let paper_item = PeriodicalItem::new(
+            "Paper".to_string(),
+            NaiveDate::from_ymd_opt(2026, 2, 12).unwrap(),
+        );
+        let result = generate_periodical_events(date);
+
+        assert!(result.is_some());
+
+        let items = result.unwrap();
+        assert!(items.len() == 2);
+        assert_eq!(plastic_item, items[0]);
+        assert_eq!(paper_item, items[1]);
     }
 
     #[test]
