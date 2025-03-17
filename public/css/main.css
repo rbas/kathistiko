@@ -2,6 +2,8 @@
    font-family: 'Open Sans', sans-serif;
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: none; /* Disable anti-aliasing */
+    font-smooth: never; /* For newer browsers like Firefox */
 }
 
 body, html {
@@ -40,6 +42,10 @@ h1, h2, h3 {
   border: 1px solid #000;
   border-radius: 5px;
     margin-bottom: 5px;
+}
+
+.box b {
+  font-size: large;
 }
 
 .attention {
