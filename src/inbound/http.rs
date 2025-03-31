@@ -3,7 +3,10 @@ use log::info;
 use std::net::SocketAddr;
 use tower_http::services::ServeDir;
 
-use crate::{inbound::handlers::calendar_handler, settings::Settings};
+use crate::{
+    inbound::handlers::{calendar_handler, index},
+    settings::Settings,
+};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -22,7 +25,8 @@ pub async fn spawn_web_server(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let public_folder = state.settings.clone().public_folder;
     let app = Router::new()
-        .route("/", get(calendar_handler))
+        .route("/", get(index))
+        .route("/calendar", get(calendar_handler))
         .nest_service("/public", ServeDir::new(public_folder))
         .with_state(state);
 

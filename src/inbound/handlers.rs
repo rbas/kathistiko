@@ -75,3 +75,7 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
 
     HtmlTemplate(template)
 }
+
+pub async fn index() -> String {
+    "OK".to_string()
+}
