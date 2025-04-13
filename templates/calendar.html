@@ -6,7 +6,7 @@
         <div class="date">
             <div class="date-left">
                 <span>{{ current_date.day() }}</span>
-                <span>{{ current_date.weekday() }}</span>
+                <span>{{ current_date.format("%A") }}</span>
             </div>
             <div class="date-right">{{ self.get_month_name() }}</div>
         </div>
