@@ -14,7 +14,8 @@
         {% if let Some(trash_events) = periodical_items %}
             <div class="trash-events">
             {% for item in trash_events %}
-                <div class="box {% if item.is_today() %}attention{% endif %}">
+                {% if item.is_old() == false %}
+                <div class="box {% if item.is_today() || item.is_tomorrow() %}attention{% endif %}">
                       <div class="trash-event">
                           <div class="trash-event-summary">{{ item.summary }}</div>
                           <div class="trash-event-day">
@@ -28,6 +29,7 @@
                           </div>
                       </div>
                   </div>
+                  {% endif %}
             {% endfor %}
             </div>
         {% endif %}
