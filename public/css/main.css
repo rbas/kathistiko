@@ -25,10 +25,10 @@ h1, h2, h3 {
 .dashboard {
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: 50% 50%; /* Two equal columns */
-    grid-template-rows: 50% 50%; /* Two equal rows */
-    width: 800px;
-    height: 480px;
+    grid-template-columns: 1fr; /* Two equal columns */
+    grid-template-rows: auto; /* Two equal rows */
+    width: 480px;
+    height: 800px;
     position: absolute;
     top: 0;
     left: 0;
@@ -48,13 +48,8 @@ h1, h2, h3 {
   padding: 10px;
   border: 1px solid #000;
   border-radius: 5px;
-  margin-bottom: 5px;
-  font-size: 1.1em;
-  font-weight: bold;
-}
-
-.box b {
-  font-size: large;
+  display: block; /* Changed from flex to block for better layout control */
+  margin-bottom: 10px; /* Add some space between events for better readability */
 }
 
 .attention {
@@ -68,21 +63,41 @@ h1, h2, h3 {
   font-weight: bold;
 }
 
-.date {
-  text-align: right;
-}
-h1.date {
-  font-weight: normal;
-}
-h3.date {
-  font-weight: normal;
-  font-size: 1.5em;
+.event-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-h1.date span{
-  font-weight: bold;
+.event-date {
+  display: flex;
+  gap: 0.5em;
+}
+
+.event-date span {
+  display: block; /* Ensure each date part is on a new line */
 }
 
 .number-of-days {
-  margin-left: 5em;
+  margin-left: auto; /* Align to the right */
+}
+
+.date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 3em; /* Increase the font size */
+}
+
+.date-left {
+  display: flex;
+  gap: 0.5em;
+}
+
+.date-left span:first-child {
+  font-weight: bold; /* Make the number bolder */
+}
+
+.date-right {
+  margin-left: auto;
 }

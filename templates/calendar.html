@@ -1,44 +1,53 @@
 {% extends "base.html" %}
 {% block body %}
 <div class="dashboard">
-        <div class="container">
-          <h1>Trash</h1>
-          {% if let Some(trash_events) = periodical_items %}
+    <div class="container">
+        <!-- Current Date -->
+        <div class="date">
+            <div class="date-left">
+                <span>{{ current_date.day() }}</span>
+                <span>{{ current_date.weekday() }}</span>
+            </div>
+            <div class="date-right">{{ self.get_month_name() }}</div>
+        </div>
+        <!-- Trash Events -->
+        {% if let Some(trash_events) = periodical_items %}
+            <h1>Trash</h1>
             {% for item in trash_events %}
-              {% if item.is_old() == false %}
                 <div class="box {% if item.is_today() %}attention{% endif %}">
                     {% if item.is_today() %}
-                      <h4>Today</h4>
+                        <h4>Today</h4>
                     {% else if item.is_tomorrow() %}
-                      <h4>Tomorrow</h4>
+                        <h4>Tomorrow</h4>
                     {% else %}
-                      <h4>{{ item.week_day() }}</h4>
+                        <h4>{{ item.week_day() }}</h4>
                     {% endif %}
                     {{ item.summary }}
                 </div>
-              {% endif %}
             {% endfor %}
-          {% endif %}
-          </div>
-        <div class="container">
-          <h1 class="date"><span>{{ current_date.day() }}</span> {{ current_date.weekday() }}</h1>
-          <h3 class="date">{{ self.get_month_name() }}</h3>
-          {% if let Some(events) = calendar_items %}
+        {% endif %}
+
+        <!-- Calendar Events -->
+        {% if let Some(events) = calendar_items %}
             {% for event in events %}
-              <div class="box">
-                <h4>{{ event.summary }}</h4>
-                {{event.start_date_week_day()}}&nbsp;<b>{{ event.start_date_day() }}</b>.{{ event.start_date_month()}}.&nbsp;
-                {% if !event.is_day_event() %}
-                  {% if event.end_date.is_some() %}
-                  <span>&ndash;&nbsp;<b>{{ event.end_date_day().unwrap() }}</b>.{{ event.end_date_month().unwrap()}}.&nbsp;</span>
-                  <span class="number-of-days">{{ event.number_of_days() }}&nbsp;days</span>
-                  {% endif %}
-                {% endif %}
-              </div>
+                <div class="box">
+                    <h4>{{ event.summary }}</h4>
+                    <div class="event-details">
+                        <div class="event-date">
+                            <span>{{ event.start_date_week_day() }} <b>{{ event.start_date_day() }}</b>. {{ event.start_date_month() }}.</span>
+                            {% if !event.is_day_event() %}
+                                {% if event.end_date.is_some() %}
+                                    <span>&ndash; <b>{{ event.end_date_day().unwrap() }}</b>. {{ event.end_date_month().unwrap() }}.</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% if !event.is_day_event() %}
+                            <span class="number-of-days">{{ event.number_of_days() }} days</span>
+                        {% endif %}
+                    </div>
+                </div>
             {% endfor %}
-          {% endif %}
-        </div>
-        <div class="container">
-        </div>
+        {% endif %}
     </div>
+</div>
 {% endblock %}
