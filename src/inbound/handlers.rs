@@ -57,7 +57,14 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
     let offset = Days::new(state.settings.family_calendar_offset_days);
 
     let calendar_path = format!("{}/calendar.ics", &state.settings.tmp_folder);
-    let result = get_calendar_items(url, date, offset, &calendar_path).await;
+    let result = get_calendar_items(
+        url,
+        date,
+        offset,
+        &calendar_path,
+        state.settings.cache_ttl_seconds,
+    )
+    .await;
 
     let calendar_items = match result {
         Ok(items) => Some(items),

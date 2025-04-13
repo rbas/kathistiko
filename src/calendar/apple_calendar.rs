@@ -1,6 +1,8 @@
 use std::{
-    fs::{read_to_string, File},
+    fs::{metadata, read_to_string, File},
     io::Write,
+    path::Path,
+    time::Duration,
 };
 
 use chrono::{Days, NaiveDate};
@@ -85,7 +87,27 @@ impl From<&Event> for Item {
     }
 }
 
-async fn download(url: &str, calendar_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn is_cache_valid(cache_path: &str, ttl: u64) -> bool {
+    if let Ok(metadata) = metadata(cache_path) {
+        if let Ok(modified) = metadata.modified() {
+            if let Ok(elapsed) = modified.elapsed() {
+                return elapsed <= Duration::new(ttl, 0);
+            }
+        }
+    }
+    false
+}
+
+async fn download(
+    url: &str,
+    calendar_path: &str,
+    cache_ttl: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if Path::new(calendar_path).exists() && is_cache_valid(calendar_path, cache_ttl) {
+        println!("Using cached calendar file.");
+        return Ok(());
+    }
+
     // Make the request to the WebCal URL
     let response = reqwest::get(url).await?;
 
@@ -158,8 +180,9 @@ pub async fn get_calendar_items(
     date: NaiveDate,
     offset: Days,
     calendar_path: &str,
+    cache_ttl: u64,
 ) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
-    download(url, calendar_path).await?;
+    download(url, calendar_path, cache_ttl).await?;
 
     let contents = read_to_string(calendar_path)?;
 

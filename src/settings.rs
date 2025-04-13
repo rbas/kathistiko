@@ -11,6 +11,7 @@ pub struct Settings {
     pub server_listen_at: String,
     pub tmp_folder: String,
     pub public_folder: String,
+    pub cache_ttl_seconds: u64,
 }
 impl Settings {
     pub fn new(path: &Path) -> Result<Self, ServiceConfigurationError> {
