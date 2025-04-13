@@ -101,3 +101,22 @@ h1, h2, h3 {
 .date-right {
   margin-left: auto;
 }
+
+.trash-events {
+  margin-bottom: 25px;
+}
+
+.trash-event {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trash-event-summary {
+  font-weight: bold;
+  font-size: 1.2em
+}
+
+.trash-event-day {
+  margin-left: auto; /* Align to the right */
+}
