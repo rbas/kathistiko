@@ -76,6 +76,7 @@ h1, h2, h3 {
 
 .event-date span {
   display: block; /* Ensure each date part is on a new line */
+  font-weight: bold;
 }
 
 .number-of-days {
@@ -94,7 +95,7 @@ h1, h2, h3 {
   gap: 0.5em;
 }
 
-.date-left span:first-child {
+.date-right span:first-child {
   font-weight: bold; /* Make the number bolder */
 }
 

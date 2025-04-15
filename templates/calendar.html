@@ -5,10 +5,12 @@
         <!-- Current Date -->
         <div class="date">
             <div class="date-left">
-                <span>{{ current_date.day() }}</span>
                 <span>{{ current_date.format("%A") }}</span>
             </div>
-            <div class="date-right">{{ self.get_month_name() }}</div>
+            <div class="date-right">
+              <span>{{ current_date.day() }}</span>
+              {{ self.get_month_name() }}
+            </div>
         </div>
         <!-- Trash Events -->
         {% if let Some(trash_events) = periodical_items %}
