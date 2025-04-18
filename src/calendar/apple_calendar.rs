@@ -8,29 +8,39 @@ use std::{
 
 use std::hash::{Hash, Hasher};
 
-use chrono::{Days, NaiveDate};
-use icalendar::{Calendar, CalendarComponent, Component, DatePerhapsTime, Event};
+use chrono::{Days, NaiveDate, NaiveTime};
+use icalendar::{Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event};
 
 #[derive(Debug)]
 pub struct Item {
     pub summary: String,
     pub start_date: NaiveDate,
+    pub start_time: Option<NaiveTime>,
     pub end_date: Option<NaiveDate>,
+    pub end_time: Option<NaiveTime>,
 }
 
 impl Item {
-    fn new(summary: String, start_date: NaiveDate, end_date: Option<NaiveDate>) -> Self {
+    fn new(
+        summary: String,
+        start_date: NaiveDate,
+        start_time: Option<NaiveTime>,
+        end_date: Option<NaiveDate>,
+        end_time: Option<NaiveTime>,
+    ) -> Self {
         Self {
             summary,
             start_date,
+            start_time,
             end_date,
+            end_time,
         }
     }
     pub fn start_date_week_day(&self) -> String {
         self.start_date.format("%A").to_string()
     }
 
-    // Method to check if start_date is today
+    // Method to get start_date day
     pub fn start_date_day(&self) -> String {
         self.start_date.format("%d").to_string()
     }
@@ -58,6 +68,9 @@ impl Item {
     pub fn is_day_event(&self) -> bool {
         if let Some(end_date) = self.end_date {
             self.start_date == end_date
+                && (self.start_time.is_none()
+                    || self.end_time.is_none()
+                    || self.start_time == self.end_time)
         } else {
             // If item does not have end it is most likely one day event
             true
@@ -78,15 +91,38 @@ impl Item {
 impl From<&Event> for Item {
     fn from(event: &Event) -> Self {
         let summary = event.get_summary().unwrap_or("Summary wasn't filled");
-        let start_date = event.get_start().unwrap().date_naive();
 
-        let mut end_date: Option<NaiveDate> = None;
+        let start = event.get_start().unwrap();
+        let start_date = start.date_naive();
+        let start_time = extract_time_if_present(&start);
 
-        if let Some(end) = event.get_end() {
-            end_date = Some(end.date_naive());
+        let (end_date, end_time) = if let Some(end) = event.get_end() {
+            (Some(end.date_naive()), extract_time_if_present(&end))
+        } else {
+            (None, None)
+        };
+
+        Self::new(
+            summary.to_string(),
+            start_date,
+            start_time,
+            end_date,
+            end_time,
+        )
+    }
+}
+
+fn extract_time_if_present(date_perhaps_time: &DatePerhapsTime) -> Option<NaiveTime> {
+    match date_perhaps_time {
+        DatePerhapsTime::DateTime(dt) => {
+            // Extract time from the datetime
+            match dt {
+                CalendarDateTime::Floating(naive_dt) => Some(naive_dt.time()),
+                CalendarDateTime::Utc(utc_dt) => Some(utc_dt.naive_utc().time()),
+                CalendarDateTime::WithTimezone { date_time, tzid: _ } => Some(date_time.time()),
+            }
         }
-
-        Self::new(summary.to_string(), start_date, end_date)
+        DatePerhapsTime::Date(_) => None,
     }
 }
 
@@ -155,7 +191,6 @@ fn is_actual_event(
     match event_end {
         Some(date) => {
             let end = date.date_naive();
-
             start <= today && end >= today
         }
         None => false,

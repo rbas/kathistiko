@@ -50,9 +50,17 @@
                                 {% endif %}
                             {% endif %}
                         </div>
-                        {% if !event.is_day_event() %}
-                            <span class="number-of-days">{{ event.number_of_days() }} days</span>
-                        {% endif %}
+                        <div class="event-time">
+                            {% if event.start_time.is_some() %}
+                                <span class="time">{{ event.start_time.unwrap().format("%H:%M") }}</span>
+                                {% if event.end_time.is_some() %}
+                                    <span>&ndash; {{ event.end_time.unwrap().format("%H:%M") }}</span>
+                                {% endif %}
+                            {% endif %}
+                            {% if !event.is_day_event() && event.number_of_days() > 1 %}
+                                <span class="number-of-days">{{ event.number_of_days() }} days</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             {% endfor %}
