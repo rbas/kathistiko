@@ -1,9 +1,12 @@
 use std::{
     fs::{metadata, read_to_string, File},
+    hash::DefaultHasher,
     io::Write,
     path::Path,
     time::Duration,
 };
+
+use std::hash::{Hash, Hasher};
 
 use chrono::{Days, NaiveDate};
 use icalendar::{Calendar, CalendarComponent, Component, DatePerhapsTime, Event};
@@ -176,19 +179,39 @@ fn filter_events(calendar: &Calendar, day: NaiveDate, offset: Days) -> Vec<Item>
 }
 
 pub async fn get_calendar_items(
-    url: &str,
+    urls: Vec<&str>,
     date: NaiveDate,
     offset: Days,
-    calendar_path: &str,
+    cache_folder: &str,
     cache_ttl: u64,
 ) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
-    download(url, calendar_path, cache_ttl).await?;
+    let mut all_items: Vec<Item> = Vec::new();
 
-    let contents = read_to_string(calendar_path)?;
+    for url in urls.iter() {
+        // Generate a unique file path based on the URL hash
+        let mut hasher = DefaultHasher::new();
+        url.hash(&mut hasher);
+        let hash = hasher.finish();
+        let calendar_path = format!("{}/calendar_{}.ics", cache_folder, hash);
 
-    let parsed_calendar: Calendar = contents.parse()?;
+        // Download the calendar (with caching)
+        download(url, &calendar_path, cache_ttl).await?;
 
-    let items = filter_events(&parsed_calendar, date, offset);
+        // Read the calendar file
+        let contents = read_to_string(&calendar_path)?;
 
-    Ok(items)
+        // Parse the calendar
+        let parsed_calendar: Calendar = contents.parse()?;
+
+        // Filter events
+        let items = filter_events(&parsed_calendar, date, offset);
+
+        // Collect items
+        all_items.extend(items);
+    }
+
+    // Sort all items by start_date
+    all_items.sort_by(|a, b| a.start_date.cmp(&b.start_date));
+
+    Ok(all_items)
 }
