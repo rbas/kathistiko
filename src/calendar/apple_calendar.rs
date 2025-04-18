@@ -179,7 +179,7 @@ fn filter_events(calendar: &Calendar, day: NaiveDate, offset: Days) -> Vec<Item>
 }
 
 pub async fn get_calendar_items(
-    urls: Vec<&str>,
+    urls: Vec<String>,
     date: NaiveDate,
     offset: Days,
     cache_folder: &str,

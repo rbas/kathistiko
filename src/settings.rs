@@ -6,8 +6,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq, Clone)]
 pub struct Settings {
-    pub family_calendar_url: String,
-    pub family_calendar_offset_days: u64,
+    pub calendars_urls: Vec<String>,
+    pub calendar_offset_days: u64,
     pub server_listen_at: String,
     pub tmp_folder: String,
     pub public_folder: String,
