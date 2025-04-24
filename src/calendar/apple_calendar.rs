@@ -97,7 +97,18 @@ impl From<&Event> for Item {
         let start_time = extract_time_if_present(&start);
 
         let (end_date, end_time) = if let Some(end) = event.get_end() {
-            (Some(end.date_naive()), extract_time_if_present(&end))
+            let raw_end_date = end.date_naive();
+
+            // Adjust end date for all-day events (subtract one day)
+            let adjusted_end_date =
+                if start_time.is_none() && extract_time_if_present(&end).is_none() {
+                    // For all-day events, subtract one day
+                    raw_end_date.pred_opt().unwrap_or(raw_end_date)
+                } else {
+                    raw_end_date
+                };
+
+            (Some(adjusted_end_date), extract_time_if_present(&end))
         } else {
             (None, None)
         };
