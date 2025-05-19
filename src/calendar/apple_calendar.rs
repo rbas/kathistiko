@@ -186,8 +186,8 @@ async fn download(
 fn is_actual_event(
     event_start: Option<DatePerhapsTime>,
     event_end: Option<DatePerhapsTime>,
-    today: NaiveDate,
-    start_date_offset: NaiveDate,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
 ) -> bool {
     if event_start.is_none() {
         return false;
@@ -195,14 +195,17 @@ fn is_actual_event(
 
     let start = event_start.unwrap().date_naive();
 
-    if start >= today && start <= start_date_offset {
+    if start >= start_date && start <= end_date {
         return true;
     }
 
     match event_end {
         Some(date) => {
-            let end = date.date_naive();
-            start <= today && end >= today
+            let end = date.date_naive().pred_opt();
+            match end {
+                Some(end) => start <= start_date && end >= start_date,
+                None => false,
+            }
         }
         None => false,
     }
