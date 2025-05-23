@@ -4,22 +4,29 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-reqwest = { version = "0.12.14", features = ["json"] }
-chrono = { version = "0.4.40", features = ["serde"] }
-icalendar = { version = "0.16.13", features = ["chrono-tz", "serde", "serde_json", "parser"] }
+reqwest = { version = "0.12.15", features = ["json"] }
+chrono = { version = "0.4.41", features = ["serde"] }
+icalendar = { version = "0.16.13", features = [
+  "chrono-tz",
+  "serde",
+  "serde_json",
+  "parser",
+] }
 serde = "1.0.219"
-tokio = { version = "1.44.1", features = [
+tokio = { version = "1.45.0", features = [
   "macros",
   "rt-multi-thread",
   "signal",
 ] }
-axum = { version = "0.8.1", features = ["tokio"] }
-tower-http = { version = "0.6.2", features = ["fs"] }
-log = { version = "0.4.26", default-features = false }
-env_logger = { version = "0.11.7", features = ["auto-color"] }
-config = { version = "0.15.11", features = ["toml"] }
+axum = { version = "0.8.4", features = ["macros", "tokio"] }
+tower-http = { version = "0.6.4", features = ["fs"] }
+log = { version = "0.4.27", default-features = false }
+env_logger = { version = "0.11.8", features = ["auto-color"] }
 clap = "4.5.32"
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 serde_json = "1.0.140"
 thiserror = "2.0.12"
+[dependencies.config]
+version = "0.15.11"
+features = ["toml"]

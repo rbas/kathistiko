@@ -1,6 +1,8 @@
 use chrono::{DateTime, TimeZone, Utc};
+use core::fmt;
 use reqwest::Error as ReqwestError;
 use serde::Deserialize;
+use serde_json::json;
 use std::convert::TryFrom;
 use thiserror::Error;
 
@@ -24,6 +26,16 @@ pub enum TemperatureSensorsError {
 pub enum SensorName {
     Kairos,
     Kathistiko,
+}
+
+impl fmt::Display for SensorName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            SensorName::Kairos => "Kairos",
+            SensorName::Kathistiko => "Kathistiko",
+        };
+        write!(f, "{}", name)
+    }
 }
 
 impl TryFrom<&str> for SensorName {
@@ -109,10 +121,12 @@ impl TryFrom<ApiResponse> for Vec<Sensor> {
 }
 
 pub async fn download_temperature_data(
-    url: &str,
+    hostname: &str,
     username: &str,
     password: &str,
 ) -> Result<ApiResponse, TemperatureSensorsError> {
+    let path = "/api/v1/query?query=hass_sensor_unit_celsius{entity%3D~\"sensor.kairos_temperature|sensor.kathistiko_temperature\"}";
+    let url = format!("{}{}", hostname, path);
     let client = reqwest::Client::new();
     let response = client
         .get(url)
@@ -129,6 +143,49 @@ pub async fn download_temperature_data(
         .json::<ApiResponse>()
         .await
         .map_err(|_| TemperatureSensorsError::InvalidResponseFormat)?;
+
+    Ok(api_response)
+}
+
+pub fn kk() -> Result<ApiResponse, TemperatureSensorsError> {
+    let json_data = json!({
+      "status": "success",
+      "data": {
+        "resultType": "vector",
+        "result": [
+          {
+            "metric": {
+              "__name__": "hass_sensor_unit_celsius",
+              "domain": "sensor",
+              "entity": "sensor.kairos_temperature",
+              "friendly_name": "Kairos temperature",
+              "instance": "192.168.42.235:8123",
+              "job": "hass"
+            },
+            "value": [
+              1747989569.610,
+              "16.05"
+            ]
+          },
+          {
+            "metric": {
+              "__name__": "hass_sensor_unit_celsius",
+              "domain": "sensor",
+              "entity": "sensor.kathistiko_temperature",
+              "friendly_name": "Kathistiko temperature",
+              "instance": "192.168.42.235:8123",
+              "job": "hass"
+            },
+            "value": [
+              1747989569.610,
+              "21.67"
+            ]
+          }
+        ]
+      }
+    });
+
+    let api_response: ApiResponse = serde_json::from_value(json_data).unwrap();
 
     Ok(api_response)
 }
@@ -214,3 +271,4 @@ mod tests {
         }
     }
 }
+

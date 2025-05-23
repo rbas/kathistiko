@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::{
+    debug_handler,
     extract::State,
     response::{Html, IntoResponse, Response},
 };
@@ -7,9 +8,12 @@ use chrono::{DateTime, Datelike, Days, Local};
 use log::error;
 use reqwest::StatusCode;
 
-use crate::calendar::{
-    apple_calendar::{get_calendar_items, Item},
-    trash_events::{generate_periodical_events, PeriodicalItem},
+use crate::{
+    calendar::{
+        apple_calendar::{get_calendar_items, Item},
+        trash_events::{generate_periodical_events, PeriodicalItem},
+    },
+    sensor::temperature::{download_temperature_data, Sensor},
 };
 
 use super::http::AppState;
@@ -38,6 +42,7 @@ pub struct CalendarTemplate {
     pub current_date: DateTime<Local>,
     pub periodical_items: Option<Vec<PeriodicalItem>>,
     pub calendar_items: Option<Vec<Item>>,
+    pub temperature_data: Option<Vec<Sensor>>,
 }
 
 impl CalendarTemplate {
@@ -46,6 +51,7 @@ impl CalendarTemplate {
     }
 }
 
+#[debug_handler]
 pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoResponse {
     let today = Local::now();
 
@@ -74,10 +80,32 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
         }
     };
 
+    let result = download_temperature_data(
+        state.settings.prometheus_url.as_str(),
+        state.settings.prometheus_username.as_str(),
+        state.settings.prometheus_password.as_str(),
+    )
+    .await;
+
+    let temperature_data = match result {
+        Ok(data) => match data.try_into() {
+            Ok(sensors) => Some(sensors),
+            Err(err) => {
+                error!("Cannot parse temperature sensor data {:#?}", err);
+                None
+            }
+        },
+        Err(err) => {
+            error!("Cannot get temperature sensor data {:#?}", err);
+            None
+        }
+    };
+
     let template = CalendarTemplate {
         current_date: today,
         periodical_items,
         calendar_items,
+        temperature_data,
     };
 
     HtmlTemplate(template)

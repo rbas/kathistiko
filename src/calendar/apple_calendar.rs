@@ -152,7 +152,7 @@ async fn download(
     url: &str,
     calendar_path: &str,
     cache_ttl: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if Path::new(calendar_path).exists() && is_cache_valid(calendar_path, cache_ttl) {
         println!("Using cached calendar file.");
         return Ok(());
@@ -233,7 +233,7 @@ pub async fn get_calendar_items(
     offset: Days,
     cache_folder: &str,
     cache_ttl: u64,
-) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Item>, Box<dyn std::error::Error + Send + Sync>> {
     let mut all_items: Vec<Item> = Vec::new();
 
     for url in urls.iter() {

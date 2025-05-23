@@ -4,3 +4,6 @@ tmp_folder = "/Users/rbas/projects/kathistiko/dashboard/fixtures"
 public_folder = "/Users/rbas/projects/kathistiko/dashboard/public"
 server_listen_at = "0.0.0.0:8000"
 cache_ttl_seconds = 1800
+prometheus_url = "url"
+prometheus_username = "username"
+prometheus_password = "password"

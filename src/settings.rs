@@ -12,6 +12,9 @@ pub struct Settings {
     pub tmp_folder: String,
     pub public_folder: String,
     pub cache_ttl_seconds: u64,
+    pub prometheus_url: String,
+    pub prometheus_username: String,
+    pub prometheus_password: String,
 }
 impl Settings {
     pub fn new(path: &Path) -> Result<Self, ServiceConfigurationError> {
