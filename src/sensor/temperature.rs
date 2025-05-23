@@ -1,6 +1,7 @@
 use chrono::{DateTime, TimeZone, Utc};
 use reqwest::Error as ReqwestError;
 use serde::Deserialize;
+use std::convert::TryFrom;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -11,35 +12,41 @@ pub enum TemperatureSensorsError {
     InvalidResponseFormat,
     #[error("Authentication failed")]
     AuthenticationFailed,
+    #[error("Invalid sensor name")]
+    InvalidSensorName,
+    #[error("Invalid temperature value")]
+    InvalidTemperature,
+    #[error("Invalid timestamp")]
+    InvalidTimestamp,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum EntityName {
+pub enum SensorName {
     Kairos,
     Kathistiko,
 }
 
-impl TryFrom<&str> for EntityName {
-    type Error = &'static str;
+impl TryFrom<&str> for SensorName {
+    type Error = TemperatureSensorsError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "sensor.kairos_temperature" => Ok(EntityName::Kairos),
-            "sensor.kathistiko_temperature" => Ok(EntityName::Kathistiko),
-            _ => Err("Invalid entity"),
+            "sensor.kairos_temperature" => Ok(SensorName::Kairos),
+            "sensor.kathistiko_temperature" => Ok(SensorName::Kathistiko),
+            _ => Err(TemperatureSensorsError::InvalidSensorName),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Entity {
-    pub name: EntityName,
+pub struct Sensor {
+    pub name: SensorName,
     pub temperature: f32,
     pub timestamp: DateTime<Utc>,
 }
 
-impl Entity {
-    pub fn new(name: EntityName, temperature: f32, timestamp: DateTime<Utc>) -> Self {
+impl Sensor {
+    pub fn new(name: SensorName, temperature: f32, timestamp: DateTime<Utc>) -> Self {
         Self {
             name,
             temperature,
@@ -48,50 +55,55 @@ impl Entity {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Metric {
     pub entity: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ResultItem {
     pub metric: Metric,
     pub value: (f64, String),
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Data {
     pub result: Vec<ResultItem>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ApiResponse {
     pub data: Data,
 }
 
-impl TryFrom<ResultItem> for Entity {
-    type Error = &'static str;
+impl TryFrom<ResultItem> for Sensor {
+    type Error = TemperatureSensorsError;
 
     fn try_from(item: ResultItem) -> Result<Self, Self::Error> {
-        let name = EntityName::try_from(item.metric.entity.as_str())?;
-        let temperature: f32 = item.value.1.parse().map_err(|_| "Invalid temperature")?;
-        let result = Utc.timestamp_opt(item.value.0 as i64, 0).single();
-        match result {
-            None => Err("Invalid timestamp"),
-            Some(timestamp) => Ok(Entity::new(name, temperature, timestamp)),
-        }
+        let name = SensorName::try_from(item.metric.entity.as_str())
+            .map_err(|_| TemperatureSensorsError::InvalidSensorName)?;
+        let temperature: f32 = item
+            .value
+            .1
+            .parse()
+            .map_err(|_| TemperatureSensorsError::InvalidTemperature)?;
+        let timestamp = Utc
+            .timestamp_opt(item.value.0 as i64, 0)
+            .single()
+            .ok_or(TemperatureSensorsError::InvalidTimestamp)?;
+        Ok(Sensor::new(name, temperature, timestamp))
     }
 }
 
-impl TryFrom<ApiResponse> for Vec<Entity> {
-    type Error = &'static str;
+impl TryFrom<ApiResponse> for Vec<Sensor> {
+    type Error = TemperatureSensorsError;
 
     fn try_from(api_response: ApiResponse) -> Result<Self, Self::Error> {
         api_response
             .data
             .result
             .into_iter()
-            .map(Entity::try_from)
+            .map(Sensor::try_from)
             .collect()
     }
 }
@@ -127,27 +139,28 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_try_from_valid_entities() {
-        assert_eq!(
-            EntityName::try_from("sensor.kairos_temperature"),
-            Ok(EntityName::Kairos)
-        );
-        assert_eq!(
-            EntityName::try_from("sensor.kathistiko_temperature"),
-            Ok(EntityName::Kathistiko)
-        );
+    fn test_try_from_valid_sensors() {
+        match SensorName::try_from("sensor.kairos_temperature") {
+            Ok(name) => assert!(matches!(name, SensorName::Kairos)),
+            Err(_) => panic!("Expected Ok(SensorName::Kairos), got Err"),
+        }
+
+        match SensorName::try_from("sensor.kathistiko_temperature") {
+            Ok(name) => assert!(matches!(name, SensorName::Kathistiko)),
+            Err(_) => panic!("Expected Ok(SensorName::Kathistiko), got Err"),
+        }
     }
 
     #[test]
-    fn test_try_from_invalid_entity() {
-        assert_eq!(
-            EntityName::try_from("sensor.unknown_temperature"),
-            Err("Invalid entity")
-        );
+    fn test_try_from_invalid_sensor() {
+        match SensorName::try_from("sensor.unknown_temperature") {
+            Ok(name) => panic!("Expected Err, got Ok({:?})", name),
+            Err(err) => assert!(matches!(err, TemperatureSensorsError::InvalidSensorName)),
+        }
     }
 
     #[test]
-    fn test_entity_mapping() {
+    fn test_sensor_mapping() {
         let json_data = json!({
           "status": "success",
           "data": {
@@ -186,16 +199,16 @@ mod tests {
         });
 
         let api_response: ApiResponse = serde_json::from_value(json_data).unwrap();
-        let entities: Vec<Entity> = api_response.try_into().unwrap();
-        for entity in entities {
-            match entity.name {
-                EntityName::Kairos => {
-                    assert_eq!(entity.temperature, 16.05);
-                    assert_eq!(entity.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
+        let sensors: Vec<Sensor> = api_response.try_into().unwrap();
+        for sensor in sensors {
+            match sensor.name {
+                SensorName::Kairos => {
+                    assert_eq!(sensor.temperature, 16.05);
+                    assert_eq!(sensor.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
                 }
-                EntityName::Kathistiko => {
-                    assert_eq!(entity.temperature, 21.67);
-                    assert_eq!(entity.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
+                SensorName::Kathistiko => {
+                    assert_eq!(sensor.temperature, 21.67);
+                    assert_eq!(sensor.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
                 }
             }
         }
