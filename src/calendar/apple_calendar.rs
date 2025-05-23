@@ -264,3 +264,91 @@ pub async fn get_calendar_items(
 
     Ok(all_items)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{NaiveDate, NaiveTime};
+
+    #[test]
+    fn test_item_creation() {
+        let item = Item::new(
+            "Test Event".to_string(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
+            Some(NaiveTime::from_hms_opt(10, 0, 0).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()),
+            Some(NaiveTime::from_hms_opt(12, 0, 0).unwrap()),
+        );
+
+        assert_eq!(item.summary, "Test Event");
+        assert_eq!(
+            item.start_date,
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()
+        );
+        assert_eq!(
+            item.start_time,
+            Some(NaiveTime::from_hms_opt(10, 0, 0).unwrap())
+        );
+        assert_eq!(
+            item.end_date,
+            Some(NaiveDate::from_ymd_opt(2023, 10, 1).unwrap())
+        );
+        assert_eq!(
+            item.end_time,
+            Some(NaiveTime::from_hms_opt(12, 0, 0).unwrap())
+        );
+    }
+
+    #[test]
+    fn test_is_day_event() {
+        let item = Item::new(
+            "All Day Event".to_string(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
+            None,
+            Some(NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()),
+            None,
+        );
+
+        assert!(item.is_day_event());
+    }
+
+    #[test]
+    fn test_number_of_days() {
+        let item = Item::new(
+            "Multi-Day Event".to_string(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
+            None,
+            Some(NaiveDate::from_ymd_opt(2023, 10, 3).unwrap()),
+            None,
+        );
+
+        assert_eq!(item.number_of_days(), 2);
+    }
+
+    #[test]
+    fn test_is_actual_event() {
+        let start_date = NaiveDate::from_ymd_opt(2023, 10, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2023, 10, 3).unwrap();
+
+        let event_start = Some(icalendar::DatePerhapsTime::DateTime(
+            icalendar::CalendarDateTime::Floating(chrono::NaiveDateTime::new(
+                start_date,
+                NaiveTime::from_hms_opt(10, 0, 0).unwrap(),
+            )),
+        ));
+
+        let event_end = Some(icalendar::DatePerhapsTime::DateTime(
+            icalendar::CalendarDateTime::Floating(chrono::NaiveDateTime::new(
+                end_date,
+                NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+            )),
+        ));
+
+        assert!(is_actual_event(
+            event_start,
+            event_end,
+            start_date,
+            end_date
+        ));
+    }
+}
