@@ -73,7 +73,7 @@
                         Kathistiko
                     </div>
                     <div class="temperature-value">
-                        {{ living_room.temperature }}°C
+                        {{ living_room.temperature() }}°C
                     </div>
                 </div>
             {% endif %}
@@ -84,7 +84,7 @@
                         Kairos
                     </div>
                     <div class="temperature-value">
-                        {{ outdoor.temperature }}°C
+                        {{ outdoor.temperature() }}°C
                     </div>
                 </div>
             {% endif %}

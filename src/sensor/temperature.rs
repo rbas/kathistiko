@@ -75,12 +75,16 @@ impl Sensor {
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct LivingRoom {
-    pub temperature: f32,
+    pub temperature: Sensor,
 }
 
 impl LivingRoom {
-    pub fn new(temperature: f32) -> Self {
+    pub fn new(temperature: Sensor) -> Self {
         Self { temperature }
+    }
+
+    pub fn temperature(&self) -> f32 {
+        self.temperature.temperature
     }
 }
 
@@ -91,21 +95,26 @@ impl TryFrom<Vec<Sensor>> for LivingRoom {
         let temperature = sensors
             .iter()
             .find(|sensor| sensor.name == SensorName::Kathistiko)
-            .ok_or(Errors::MissingSensorData(SensorName::Kathistiko))?
-            .temperature;
+            .ok_or(Errors::MissingSensorData(SensorName::Kathistiko))?;
 
-        Ok(Self { temperature })
+        Ok(Self {
+            temperature: temperature.clone(),
+        })
     }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Outdoor {
-    pub temperature: f32,
+    pub temperature: Sensor,
 }
 
 impl Outdoor {
-    pub fn new(temperature: f32) -> Self {
+    pub fn new(temperature: Sensor) -> Self {
         Self { temperature }
+    }
+
+    pub fn temperature(&self) -> f32 {
+        self.temperature.temperature
     }
 }
 
@@ -116,10 +125,11 @@ impl TryFrom<Vec<Sensor>> for Outdoor {
         let temperature = sensors
             .iter()
             .find(|sensor| sensor.name == SensorName::Kairos)
-            .ok_or(Errors::MissingSensorData(SensorName::Kairos))?
-            .temperature;
+            .ok_or(Errors::MissingSensorData(SensorName::Kairos))?;
 
-        Ok(Self { temperature })
+        Ok(Self {
+            temperature: temperature.clone(),
+        })
     }
 }
 
