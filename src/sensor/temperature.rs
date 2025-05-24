@@ -31,15 +31,15 @@ pub enum Errors {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SensorName {
-    Kairos,
-    Kathistiko,
+    KairosTemperature,
+    KathistikoTemperature,
 }
 
 impl fmt::Display for SensorName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {
-            SensorName::Kairos => "Kairos",
-            SensorName::Kathistiko => "Kathistiko",
+            SensorName::KairosTemperature => "Kairos.Temperature",
+            SensorName::KathistikoTemperature => "Kathistiko.Temperature",
         };
         write!(f, "{}", name)
     }
@@ -50,85 +50,78 @@ impl TryFrom<&str> for SensorName {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "sensor.kairos_temperature" => Ok(SensorName::Kairos),
-            "sensor.kathistiko_temperature" => Ok(SensorName::Kathistiko),
+            "sensor.kairos_temperature" => Ok(SensorName::KairosTemperature),
+            "sensor.kathistiko_temperature" => Ok(SensorName::KathistikoTemperature),
             _ => Err(TemperatureSensorsError::InvalidSensorName),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct Sensor {
-    pub name: SensorName,
-    pub temperature: f32,
-    pub timestamp: DateTime<Utc>,
+pub struct SensorData {
+    name: SensorName,
+    value: f32,
+    captured_at: DateTime<Utc>,
 }
 
-impl Sensor {
-    pub fn new(name: SensorName, temperature: f32, timestamp: DateTime<Utc>) -> Self {
+impl SensorData {
+    pub fn new(name: SensorName, value: f32, captured_at: DateTime<Utc>) -> Self {
         Self {
             name,
-            temperature,
-            timestamp,
+            value,
+            captured_at,
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct LivingRoom {
-    pub temperature: Sensor,
+    temperature_sensor: SensorData,
 }
 
 impl LivingRoom {
-    pub fn new(temperature: Sensor) -> Self {
-        Self { temperature }
-    }
-
     pub fn temperature(&self) -> f32 {
-        self.temperature.temperature
+        self.temperature_sensor.value
     }
 }
 
-impl TryFrom<Vec<Sensor>> for LivingRoom {
+impl TryFrom<Vec<SensorData>> for LivingRoom {
     type Error = Errors;
 
-    fn try_from(sensors: Vec<Sensor>) -> Result<Self, Self::Error> {
+    fn try_from(sensors: Vec<SensorData>) -> Result<Self, Self::Error> {
         let temperature = sensors
             .iter()
-            .find(|sensor| sensor.name == SensorName::Kathistiko)
-            .ok_or(Errors::MissingSensorData(SensorName::Kathistiko))?;
+            .find(|sensor| sensor.name == SensorName::KathistikoTemperature)
+            .ok_or(Errors::MissingSensorData(SensorName::KathistikoTemperature))?;
 
         Ok(Self {
-            temperature: temperature.clone(),
+            temperature_sensor: temperature.clone(),
         })
     }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Outdoor {
-    pub temperature: Sensor,
+    temperature_sensor: SensorData,
 }
 
 impl Outdoor {
-    pub fn new(temperature: Sensor) -> Self {
-        Self { temperature }
-    }
-
     pub fn temperature(&self) -> f32 {
-        self.temperature.temperature
+        self.temperature_sensor.value
     }
 }
 
-impl TryFrom<Vec<Sensor>> for Outdoor {
+impl TryFrom<Vec<SensorData>> for Outdoor {
     type Error = Errors;
 
-    fn try_from(sensors: Vec<Sensor>) -> Result<Self, Self::Error> {
+    fn try_from(sensors: Vec<SensorData>) -> Result<Self, Self::Error> {
         let temperature = sensors
             .iter()
-            .find(|sensor| sensor.name == SensorName::Kairos)
-            .ok_or(Errors::MissingSensorData(SensorName::Kairos))?;
+            .find(|sensor| sensor.name == SensorName::KairosTemperature)
+            .ok_or(Errors::MissingSensorData(SensorName::KairosTemperature))?;
 
         Ok(Self {
-            temperature: temperature.clone(),
+            temperature_sensor: temperature.clone(),
         })
     }
 }
@@ -154,13 +147,13 @@ pub struct ApiResponse {
     pub data: Data,
 }
 
-impl TryFrom<ResultItem> for Sensor {
+impl TryFrom<ResultItem> for SensorData {
     type Error = TemperatureSensorsError;
 
     fn try_from(item: ResultItem) -> Result<Self, Self::Error> {
         let name = SensorName::try_from(item.metric.entity.as_str())
             .map_err(|_| TemperatureSensorsError::InvalidSensorName)?;
-        let temperature: f32 = item
+        let value: f32 = item
             .value
             .1
             .parse()
@@ -169,11 +162,11 @@ impl TryFrom<ResultItem> for Sensor {
             .timestamp_opt(item.value.0 as i64, 0)
             .single()
             .ok_or(TemperatureSensorsError::InvalidTimestamp)?;
-        Ok(Sensor::new(name, temperature, timestamp))
+        Ok(SensorData::new(name, value, timestamp))
     }
 }
 
-impl TryFrom<ApiResponse> for Vec<Sensor> {
+impl TryFrom<ApiResponse> for Vec<SensorData> {
     type Error = TemperatureSensorsError;
 
     fn try_from(api_response: ApiResponse) -> Result<Self, Self::Error> {
@@ -181,7 +174,7 @@ impl TryFrom<ApiResponse> for Vec<Sensor> {
             .data
             .result
             .into_iter()
-            .map(Sensor::try_from)
+            .map(SensorData::try_from)
             .collect()
     }
 }
@@ -217,13 +210,13 @@ pub async fn get_sensors_data(
     hostname: &str,
     username: &str,
     password: &str,
-) -> Result<Vec<Sensor>, TemperatureSensorsError> {
+) -> Result<Vec<SensorData>, TemperatureSensorsError> {
     let api_response = download_temperature_data(hostname, username, password).await?;
     let sensors = Vec::try_from(api_response)?;
     Ok(sensors)
 }
 
-pub fn process_sensor_data(sensors: Vec<Sensor>) -> (Option<LivingRoom>, Option<Outdoor>) {
+pub fn process_sensor_data(sensors: Vec<SensorData>) -> (Option<LivingRoom>, Option<Outdoor>) {
     let living_room = match LivingRoom::try_from(sensors.clone()) {
         Ok(living_room) => Some(living_room),
         Err(err) => {
@@ -257,13 +250,13 @@ mod tests {
     #[test]
     fn test_try_from_valid_sensors() {
         match SensorName::try_from("sensor.kairos_temperature") {
-            Ok(name) => assert!(matches!(name, SensorName::Kairos)),
-            Err(_) => panic!("Expected Ok(SensorName::Kairos), got Err"),
+            Ok(name) => assert!(matches!(name, SensorName::KairosTemperature)),
+            Err(_) => panic!("Expected Ok(SensorName::KairosTemperature), got Err"),
         }
 
         match SensorName::try_from("sensor.kathistiko_temperature") {
-            Ok(name) => assert!(matches!(name, SensorName::Kathistiko)),
-            Err(_) => panic!("Expected Ok(SensorName::Kathistiko), got Err"),
+            Ok(name) => assert!(matches!(name, SensorName::KathistikoTemperature)),
+            Err(_) => panic!("Expected Ok(SensorName::KathistikoTemperature), got Err"),
         }
     }
 
@@ -315,18 +308,19 @@ mod tests {
         });
 
         let api_response: ApiResponse = serde_json::from_value(json_data).unwrap();
-        let sensors: Vec<Sensor> = api_response.try_into().unwrap();
+        let sensors: Vec<SensorData> = api_response.try_into().unwrap();
         for sensor in sensors {
             match sensor.name {
-                SensorName::Kairos => {
-                    assert_eq!(sensor.temperature, 16.05);
-                    assert_eq!(sensor.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
+                SensorName::KairosTemperature => {
+                    assert_eq!(sensor.value, 16.05);
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-23 08:39:29 UTC");
                 }
-                SensorName::Kathistiko => {
-                    assert_eq!(sensor.temperature, 21.67);
-                    assert_eq!(sensor.timestamp.to_string(), "2025-05-23 08:39:29 UTC");
+                SensorName::KathistikoTemperature => {
+                    assert_eq!(sensor.value, 21.67);
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-23 08:39:29 UTC");
                 }
             }
         }
     }
 }
+
