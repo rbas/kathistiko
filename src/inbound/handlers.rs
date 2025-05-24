@@ -13,7 +13,10 @@ use crate::{
         apple_calendar::{get_calendar_items, Item},
         trash_events::{generate_periodical_events, PeriodicalItem},
     },
-    sensor::temperature::{get_sensors_data, process_sensor_data, LivingRoom, Outdoor},
+    sensor::{
+        model::{LivingRoom, Outdoor},
+        repository::repo::load_sensors_data,
+    },
 };
 
 use super::http::AppState;
@@ -88,7 +91,7 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
         }
     };
 
-    let result = get_sensors_data(
+    let result = load_sensors_data(
         state.settings.prometheus_url.as_str(),
         state.settings.prometheus_username.as_str(),
         state.settings.prometheus_password.as_str(),
@@ -102,16 +105,16 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
         living_room: None,
         outdoor: None,
     };
+
     match result {
-        Ok(sensors) => {
-            let (living_room, outdoor) = process_sensor_data(sensors);
+        Ok((living_room, outdoor)) => {
             template.living_room = living_room;
             template.outdoor = outdoor;
         }
         Err(err) => {
             error!("Cannot read data from temperature sensors {:#?}", err);
         }
-    };
+    }
 
     HtmlTemplate(template)
 }
