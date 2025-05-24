@@ -20,15 +20,8 @@ impl TryFrom<Vec<SensorData>> for LivingRoom {
     type Error = Errors;
 
     fn try_from(sensors: Vec<SensorData>) -> Result<Self, Self::Error> {
-        let temperature = sensors
-            .iter()
-            .find(|sensor| sensor.name == SensorName::KathistikoTemperature)
-            .ok_or(Errors::MissingSensorData(SensorName::KathistikoTemperature))?;
-
-        let humidity = sensors
-            .iter()
-            .find(|sensor| sensor.name == SensorName::KathistikoHumidity)
-            .ok_or(Errors::MissingSensorData(SensorName::KathistikoHumidity))?;
+        let temperature = extract_sensor_data(sensors.clone(), SensorName::KathistikoTemperature)?;
+        let humidity = extract_sensor_data(sensors.clone(), SensorName::KathistikoHumidity)?;
 
         Ok(Self {
             temperature_sensor: temperature.clone(),
@@ -57,19 +50,19 @@ impl TryFrom<Vec<SensorData>> for Outdoor {
     type Error = Errors;
 
     fn try_from(sensors: Vec<SensorData>) -> Result<Self, Self::Error> {
-        let temperature = sensors
-            .iter()
-            .find(|sensor| sensor.name == SensorName::KairosTemperature)
-            .ok_or(Errors::MissingSensorData(SensorName::KairosTemperature))?;
-
-        let humidity = sensors
-            .iter()
-            .find(|sensor| sensor.name == SensorName::KairosHumidity)
-            .ok_or(Errors::MissingSensorData(SensorName::KairosHumidity))?;
+        let temperature = extract_sensor_data(sensors.clone(), SensorName::KairosTemperature)?;
+        let humidity = extract_sensor_data(sensors.clone(), SensorName::KairosHumidity)?;
 
         Ok(Self {
             temperature_sensor: temperature.clone(),
             humidity_sensor: humidity.clone(),
         })
     }
+}
+
+fn extract_sensor_data(sensors: Vec<SensorData>, name: SensorName) -> Result<SensorData, Errors> {
+    sensors
+        .into_iter()
+        .find(|sensor| sensor.name == name)
+        .ok_or(Errors::MissingSensorData(name))
 }
