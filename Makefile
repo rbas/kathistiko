@@ -9,4 +9,4 @@ deploy: build
 	@scp config.sample.toml rbas@nabu:/srv/kathistiko/dashboard/
 	@scp public/css/main.css  rbas@nabu:/srv/kathistiko/dashboard/public/css/
 	@echo "Restarting service on remote server..."
-	@ssh rbas@nabu 'read -sp "Sudo password: " passwd && echo $$passwd | sudo -S systemctl restart kathistikodashboard.service'
+	ssh rbas@nabu 'sudo -S systemctl restart kathistikodashboard.service'
