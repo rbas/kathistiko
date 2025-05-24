@@ -70,6 +70,7 @@
             {% if let Some(outdoor) = outdoor %}
                 <div class="temperature-card">
                     <div class="temperature-value">
+                      <span class="material-icons" aria-hidden="true">park</span>
                       {{ outdoor.temperature() }}°C
                     </div>
                     <div class="humidity-value">
@@ -81,6 +82,7 @@
             {% if let Some(living_room) = living_room %}
                 <div class="temperature-card">
                     <div class="temperature-value">
+                        <span class="material-icons" aria-hidden="true">home</span>
                         {{ living_room.temperature() }}°C
                     </div>
                     <div class="humidity-value">
