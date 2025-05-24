@@ -2,7 +2,6 @@ use chrono::{DateTime, TimeZone, Utc};
 use core::fmt;
 use reqwest::Error as ReqwestError;
 use serde::Deserialize;
-use serde_json::json;
 use std::convert::TryFrom;
 use thiserror::Error;
 
@@ -22,7 +21,15 @@ pub enum TemperatureSensorsError {
     InvalidTimestamp,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
+pub enum Errors {
+    #[error("No sensor data found for {0}")]
+    NoSensorDataFound(String),
+    #[error("Missing data from sensor {0}")]
+    MissingSensorData(SensorName),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SensorName {
     Kairos,
     Kathistiko,
@@ -50,7 +57,7 @@ impl TryFrom<&str> for SensorName {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Sensor {
     pub name: SensorName,
     pub temperature: f32,
@@ -64,6 +71,55 @@ impl Sensor {
             temperature,
             timestamp,
         }
+    }
+}
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct LivingRoom {
+    pub temperature: f32,
+}
+
+impl LivingRoom {
+    pub fn new(temperature: f32) -> Self {
+        Self { temperature }
+    }
+}
+
+impl TryFrom<Vec<Sensor>> for LivingRoom {
+    type Error = Errors;
+
+    fn try_from(sensors: Vec<Sensor>) -> Result<Self, Self::Error> {
+        let temperature = sensors
+            .iter()
+            .find(|sensor| sensor.name == SensorName::Kathistiko)
+            .ok_or(Errors::MissingSensorData(SensorName::Kathistiko))?
+            .temperature;
+
+        Ok(Self { temperature })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct Outdoor {
+    pub temperature: f32,
+}
+
+impl Outdoor {
+    pub fn new(temperature: f32) -> Self {
+        Self { temperature }
+    }
+}
+
+impl TryFrom<Vec<Sensor>> for Outdoor {
+    type Error = Errors;
+
+    fn try_from(sensors: Vec<Sensor>) -> Result<Self, Self::Error> {
+        let temperature = sensors
+            .iter()
+            .find(|sensor| sensor.name == SensorName::Kairos)
+            .ok_or(Errors::MissingSensorData(SensorName::Kairos))?
+            .temperature;
+
+        Ok(Self { temperature })
     }
 }
 
@@ -145,6 +201,42 @@ pub async fn download_temperature_data(
         .map_err(|_| TemperatureSensorsError::InvalidResponseFormat)?;
 
     Ok(api_response)
+}
+
+pub async fn get_sensors_data(
+    hostname: &str,
+    username: &str,
+    password: &str,
+) -> Result<Vec<Sensor>, TemperatureSensorsError> {
+    let api_response = download_temperature_data(hostname, username, password).await?;
+    let sensors = Vec::try_from(api_response)?;
+    Ok(sensors)
+}
+
+pub fn process_sensor_data(sensors: Vec<Sensor>) -> (Option<LivingRoom>, Option<Outdoor>) {
+    let living_room = match LivingRoom::try_from(sensors.clone()) {
+        Ok(living_room) => Some(living_room),
+        Err(err) => {
+            log::error!(
+                "Cannot read data from living room temperature sensor {:#?}",
+                err
+            );
+            None
+        }
+    };
+
+    let outdoor = match Outdoor::try_from(sensors.clone()) {
+        Ok(outdoor) => Some(outdoor),
+        Err(err) => {
+            log::error!(
+                "Cannot read data from outdoor temperature sensor {:#?}",
+                err
+            );
+            None
+        }
+    };
+
+    (living_room, outdoor)
 }
 
 #[cfg(test)]

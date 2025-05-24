@@ -13,7 +13,7 @@ use crate::{
         apple_calendar::{get_calendar_items, Item},
         trash_events::{generate_periodical_events, PeriodicalItem},
     },
-    sensor::temperature::{download_temperature_data, Sensor},
+    sensor::temperature::{get_sensors_data, process_sensor_data, LivingRoom, Outdoor},
 };
 
 use super::http::AppState;
@@ -42,7 +42,8 @@ pub struct CalendarTemplate {
     pub current_date: DateTime<Local>,
     pub periodical_items: Option<Vec<PeriodicalItem>>,
     pub calendar_items: Option<Vec<Item>>,
-    pub temperature_data: Option<Vec<Sensor>>,
+    pub living_room: Option<LivingRoom>,
+    pub outdoor: Option<Outdoor>,
 }
 
 impl CalendarTemplate {
@@ -80,32 +81,29 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
         }
     };
 
-    let result = download_temperature_data(
+    let result = get_sensors_data(
         state.settings.prometheus_url.as_str(),
         state.settings.prometheus_username.as_str(),
         state.settings.prometheus_password.as_str(),
     )
     .await;
 
-    let temperature_data = match result {
-        Ok(data) => match data.try_into() {
-            Ok(sensors) => Some(sensors),
-            Err(err) => {
-                error!("Cannot parse temperature sensor data {:#?}", err);
-                None
-            }
-        },
-        Err(err) => {
-            error!("Cannot get temperature sensor data {:#?}", err);
-            None
-        }
-    };
-
-    let template = CalendarTemplate {
+    let mut template = CalendarTemplate {
         current_date: today,
         periodical_items,
         calendar_items,
-        temperature_data,
+        living_room: None,
+        outdoor: None,
+    };
+    match result {
+        Ok(sensors) => {
+            let (living_room, outdoor) = process_sensor_data(sensors);
+            template.living_room = living_room;
+            template.outdoor = outdoor;
+        }
+        Err(err) => {
+            error!("Cannot read data from temperature sensors {:#?}", err);
+        }
     };
 
     HtmlTemplate(template)

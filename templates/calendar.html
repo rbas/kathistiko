@@ -66,20 +66,29 @@
             {% endfor %}
         {% endif %}
         <!-- Temperature Sensors -->
-        {% if let Some(sensors) = temperature_data %}
-            <div class="temperature-section">
-                {% for sensor in sensors %}
-                    <div class="temperature-card box">
-                        <div class="sensor-name">
-                            {{ sensor.name }}
-                        </div>
-                        <div class="temperature-value">
-                            {{ sensor.temperature }}°C
-                        </div>
+        <div class="temperature-section">
+            {% if let Some(living_room) = living_room %}
+                <div class="temperature-card box">
+                    <div class="sensor-name">
+                        Kathistiko
                     </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+                    <div class="temperature-value">
+                        {{ living_room.temperature }}°C
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if let Some(outdoor) = outdoor %}
+                <div class="temperature-card box">
+                    <div class="sensor-name">
+                        Kairos
+                    </div>
+                    <div class="temperature-value">
+                        {{ outdoor.temperature }}°C
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
