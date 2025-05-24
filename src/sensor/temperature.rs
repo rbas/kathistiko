@@ -147,49 +147,6 @@ pub async fn download_temperature_data(
     Ok(api_response)
 }
 
-pub fn kk() -> Result<ApiResponse, TemperatureSensorsError> {
-    let json_data = json!({
-      "status": "success",
-      "data": {
-        "resultType": "vector",
-        "result": [
-          {
-            "metric": {
-              "__name__": "hass_sensor_unit_celsius",
-              "domain": "sensor",
-              "entity": "sensor.kairos_temperature",
-              "friendly_name": "Kairos temperature",
-              "instance": "192.168.42.235:8123",
-              "job": "hass"
-            },
-            "value": [
-              1747989569.610,
-              "16.05"
-            ]
-          },
-          {
-            "metric": {
-              "__name__": "hass_sensor_unit_celsius",
-              "domain": "sensor",
-              "entity": "sensor.kathistiko_temperature",
-              "friendly_name": "Kathistiko temperature",
-              "instance": "192.168.42.235:8123",
-              "job": "hass"
-            },
-            "value": [
-              1747989569.610,
-              "21.67"
-            ]
-          }
-        ]
-      }
-    });
-
-    let api_response: ApiResponse = serde_json::from_value(json_data).unwrap();
-
-    Ok(api_response)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,4 +228,3 @@ mod tests {
         }
     }
 }
-
