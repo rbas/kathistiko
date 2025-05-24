@@ -1,3 +1,3 @@
 pub mod model;
-pub mod repository;
-pub mod temperature;
+pub(super) mod repository;
+pub(super) mod temperature;
