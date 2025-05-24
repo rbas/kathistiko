@@ -32,14 +32,18 @@ pub enum Errors {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SensorName {
     KairosTemperature,
+    KairosHumidity,
     KathistikoTemperature,
+    KathistikoHumidity,
 }
 
 impl fmt::Display for SensorName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {
             SensorName::KairosTemperature => "Kairos.Temperature",
+            SensorName::KairosHumidity => "Kairos.Humidity",
             SensorName::KathistikoTemperature => "Kathistiko.Temperature",
+            SensorName::KathistikoHumidity => "Kathistiko.Humidity",
         };
         write!(f, "{}", name)
     }
@@ -51,7 +55,9 @@ impl TryFrom<&str> for SensorName {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "sensor.kairos_temperature" => Ok(SensorName::KairosTemperature),
+            "sensor.kairos_humidity" => Ok(SensorName::KairosHumidity),
             "sensor.kathistiko_temperature" => Ok(SensorName::KathistikoTemperature),
+            "sensor.kathistiko_humidity" => Ok(SensorName::KathistikoHumidity),
             _ => Err(TemperatureSensorsError::InvalidSensorName),
         }
     }
@@ -77,11 +83,16 @@ impl SensorData {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct LivingRoom {
     temperature_sensor: SensorData,
+    humidity_sensor: SensorData,
 }
 
 impl LivingRoom {
     pub fn temperature(&self) -> f32 {
         self.temperature_sensor.value
+    }
+
+    pub fn humidity(&self) -> f32 {
+        self.humidity_sensor.value
     }
 }
 
@@ -94,8 +105,14 @@ impl TryFrom<Vec<SensorData>> for LivingRoom {
             .find(|sensor| sensor.name == SensorName::KathistikoTemperature)
             .ok_or(Errors::MissingSensorData(SensorName::KathistikoTemperature))?;
 
+        let humidity = sensors
+            .iter()
+            .find(|sensor| sensor.name == SensorName::KathistikoHumidity)
+            .ok_or(Errors::MissingSensorData(SensorName::KathistikoHumidity))?;
+
         Ok(Self {
             temperature_sensor: temperature.clone(),
+            humidity_sensor: humidity.clone(),
         })
     }
 }
@@ -103,11 +120,16 @@ impl TryFrom<Vec<SensorData>> for LivingRoom {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Outdoor {
     temperature_sensor: SensorData,
+    humidity_sensor: SensorData,
 }
 
 impl Outdoor {
     pub fn temperature(&self) -> f32 {
         self.temperature_sensor.value
+    }
+
+    pub fn humidity(&self) -> f32 {
+        self.humidity_sensor.value
     }
 }
 
@@ -120,8 +142,14 @@ impl TryFrom<Vec<SensorData>> for Outdoor {
             .find(|sensor| sensor.name == SensorName::KairosTemperature)
             .ok_or(Errors::MissingSensorData(SensorName::KairosTemperature))?;
 
+        let humidity = sensors
+            .iter()
+            .find(|sensor| sensor.name == SensorName::KairosHumidity)
+            .ok_or(Errors::MissingSensorData(SensorName::KairosHumidity))?;
+
         Ok(Self {
             temperature_sensor: temperature.clone(),
+            humidity_sensor: humidity.clone(),
         })
     }
 }
@@ -184,7 +212,7 @@ pub async fn download_temperature_data(
     username: &str,
     password: &str,
 ) -> Result<ApiResponse, TemperatureSensorsError> {
-    let path = "/api/v1/query?query=hass_sensor_unit_celsius{entity%3D~\"sensor.kairos_temperature|sensor.kathistiko_temperature\"}";
+    let path = r#"/api/v1/query?query={__name__%3D~"hass_sensor_unit_u0x25u0x20rh|hass_sensor_unit_celsius"%2Centity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature"}"#;
     let url = format!("{}{}", hostname, path);
     let client = reqwest::Client::new();
     let response = client
@@ -253,10 +281,19 @@ mod tests {
             Ok(name) => assert!(matches!(name, SensorName::KairosTemperature)),
             Err(_) => panic!("Expected Ok(SensorName::KairosTemperature), got Err"),
         }
+        match SensorName::try_from("sensor.kairos_humidity") {
+            Ok(name) => assert!(matches!(name, SensorName::KairosHumidity)),
+            Err(_) => panic!("Expected Ok(SensorName::KairosHumidity), got Err"),
+        }
 
         match SensorName::try_from("sensor.kathistiko_temperature") {
             Ok(name) => assert!(matches!(name, SensorName::KathistikoTemperature)),
             Err(_) => panic!("Expected Ok(SensorName::KathistikoTemperature), got Err"),
+        }
+
+        match SensorName::try_from("sensor.kathistiko_humidity") {
+            Ok(name) => assert!(matches!(name, SensorName::KathistikoHumidity)),
+            Err(_) => panic!("Expected Ok(SensorName::KathistikoHumidity), got Err"),
         }
     }
 
@@ -285,7 +322,7 @@ mod tests {
                   "job": "hass"
                 },
                 "value": [
-                  1747989569.610,
+                  1748071727.064,
                   "16.05"
                 ]
               },
@@ -299,8 +336,36 @@ mod tests {
                   "job": "hass"
                 },
                 "value": [
-                  1747989569.610,
+                  1748071727.064,
                   "21.67"
+                ]
+              },
+              {
+                "metric": {
+                  "__name__": "hass_sensor_unit_u0x25u0x20rh",
+                  "domain": "sensor",
+                  "entity": "sensor.kairos_humidity",
+                  "friendly_name": "Kairos humidity",
+                  "instance": "192.168.42.235:8123",
+                  "job": "hass"
+                },
+                "value": [
+                  1748071727.064,
+                  "54.7"
+                ]
+              },
+              {
+                "metric": {
+                  "__name__": "hass_sensor_unit_u0x25u0x20rh",
+                  "domain": "sensor",
+                  "entity": "sensor.kathistiko_humidity",
+                  "friendly_name": "Kathistiko humidity",
+                  "instance": "192.168.42.235:8123",
+                  "job": "hass"
+                },
+                "value": [
+                  1748071727.064,
+                  "57.66"
                 ]
               }
             ]
@@ -313,14 +378,21 @@ mod tests {
             match sensor.name {
                 SensorName::KairosTemperature => {
                     assert_eq!(sensor.value, 16.05);
-                    assert_eq!(sensor.captured_at.to_string(), "2025-05-23 08:39:29 UTC");
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-24 07:28:47 UTC");
+                }
+                SensorName::KairosHumidity => {
+                    assert_eq!(sensor.value, 54.7);
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-24 07:28:47 UTC");
                 }
                 SensorName::KathistikoTemperature => {
                     assert_eq!(sensor.value, 21.67);
-                    assert_eq!(sensor.captured_at.to_string(), "2025-05-23 08:39:29 UTC");
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-24 07:28:47 UTC");
+                }
+                SensorName::KathistikoHumidity => {
+                    assert_eq!(sensor.value, 57.66);
+                    assert_eq!(sensor.captured_at.to_string(), "2025-05-24 07:28:47 UTC");
                 }
             }
         }
     }
 }
-

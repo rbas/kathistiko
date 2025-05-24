@@ -145,11 +145,9 @@ h3 {
   display: flex;
   justify-content: space-around;
   background-color: white;
-  /* Semi-transparent background */
   padding: 10px 0;
   z-index: 100;
-  /* Ensure it's above other elements */
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #000;
 }
 
 .temperature-card {
@@ -158,10 +156,8 @@ h3 {
   min-width: 100px;
 }
 
-.sensor-name {
-  font-size: 0.9em;
-  color: #666;
-  margin-bottom: 3px;
+.humidity-value {
+  letter-spacing: 0.05em;
 }
 
 .temperature-value {

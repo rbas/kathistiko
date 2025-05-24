@@ -50,6 +50,13 @@ impl CalendarTemplate {
     pub fn get_month_name(&self) -> String {
         format!("{}", self.current_date.format("%B"))
     }
+
+    pub fn living_room_temperature(&self) -> String {
+        match &self.living_room {
+            Some(room) => format!("{:05.2}", room.temperature()),
+            None => "".to_string(),
+        }
+    }
 }
 
 #[debug_handler]

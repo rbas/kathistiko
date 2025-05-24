@@ -68,23 +68,23 @@
         <!-- Temperature Sensors -->
         <div class="temperature-section">
             {% if let Some(living_room) = living_room %}
-                <div class="temperature-card box">
-                    <div class="sensor-name">
-                        Kathistiko
-                    </div>
+                <div class="temperature-card">
                     <div class="temperature-value">
                         {{ living_room.temperature() }}°C
+                    </div>
+                    <div class="humidity-value">
+                      {{ living_room.humidity() }}&nbsp;%RH
                     </div>
                 </div>
             {% endif %}
 
             {% if let Some(outdoor) = outdoor %}
-                <div class="temperature-card box">
-                    <div class="sensor-name">
-                        Kairos
-                    </div>
+                <div class="temperature-card">
                     <div class="temperature-value">
-                        {{ outdoor.temperature() }}°C
+                      {{ outdoor.temperature() }}°C
+                    </div>
+                    <div class="humidity-value">
+                      {{ outdoor.humidity() }}&nbsp;%RH
                     </div>
                 </div>
             {% endif %}
