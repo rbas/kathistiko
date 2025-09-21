@@ -40,5 +40,5 @@ askama_axum = "0.4.0"
 serde_json = "1.0.140"
 thiserror = "2.0.12"
 [dependencies.config]
-version = "0.2.0"
+version = "0.15.16"
 features = ["toml"]

@@ -138,16 +138,6 @@ logs-nosudo lines="50":
     echo "📋 Viewing last {{lines}} lines of server logs (no sudo)..."
     ssh rbas@nabu 'journalctl --user-unit kathistikodashboard.service -n {{lines}} --no-pager 2>/dev/null || echo "❌ No user logs found. Use regular logs command with sudo."'
 
-# Alternative: Check if server is responding via HTTP
-ping-server:
-    #!/usr/bin/env bash
-    echo "🏓 Checking if dashboard is responding..."
-    if curl -f -s -o /dev/null http://nabu:8042; then
-        echo "✅ Dashboard is responding"
-    else
-        echo "❌ Dashboard is not responding"
-        exit 1
-    fi
 
 # === Configuration Commands ===
 
@@ -179,29 +169,6 @@ config-init:
         echo "⚠️  config.local.toml already exists"
     fi
 
-# === Documentation Commands ===
-
-# Serve documentation locally (if you add mdBook later)
-docs:
-    @echo "📚 Documentation available in docs/ folder"
-    @echo "📖 Main files:"
-    @echo "   - README.md"
-    @echo "   - docs/architecture.md"
-    @echo "   - docs/cross-compilation.md" 
-    @echo "   - docs/deployment.md"
-
-# Open documentation in browser
-docs-open:
-    #!/usr/bin/env bash
-    if command -v open > /dev/null; then
-        open README.md
-    elif command -v xdg-open > /dev/null; then
-        xdg-open README.md
-    else
-        echo "Please open README.md in your preferred editor/browser"
-    fi
-
-# === Release Commands ===
 
 # Create a release using automatic version bump
 release:
@@ -216,8 +183,16 @@ release:
     CARGO_VERSION=${RELEASE_VERSION#v}
     echo "✅ Release version: ${RELEASE_VERSION}"
     echo "📝 Updating Cargo.toml version to ${CARGO_VERSION}..."
-    sed -i.bak "s/^version = \".*\"/version = \"${CARGO_VERSION}\"/" Cargo.toml
-    rm Cargo.toml.bak
+    # Use a more precise approach: only update version in [package] section
+    awk -v new_version="$CARGO_VERSION" '
+    /^\[package\]/ { in_package = 1 }
+    /^\[/ && !/^\[package\]/ { in_package = 0 }
+    in_package && /^version = / { 
+        print "version = \"" new_version "\""
+        next 
+    }
+    { print }
+    ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
     echo "🔄 Updating Cargo.lock with new version..."
     cargo update --package dashboard --precise ${CARGO_VERSION}
     echo "💾 Staging changelog, Cargo.toml, and Cargo.lock..."
@@ -273,8 +248,16 @@ version-check:
 version-set version:
     #!/usr/bin/env bash
     echo "📝 Setting Cargo.toml version to {{version}}..."
-    sed -i.bak "s/^version = \".*\"/version = \"{{version}}\"/" Cargo.toml
-    rm Cargo.toml.bak
+    # Use a more precise approach: only update version in [package] section
+    awk -v new_version="{{version}}" '
+    /^\[package\]/ { in_package = 1 }
+    /^\[/ && !/^\[package\]/ { in_package = 0 }
+    in_package && /^version = / { 
+        print "version = \"" new_version "\""
+        next 
+    }
+    { print }
+    ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
     echo "🔄 Updating Cargo.lock with new version..."
     cargo update --package dashboard --precise {{version}}
     echo "✅ Cargo.toml and Cargo.lock updated to {{version}}"
