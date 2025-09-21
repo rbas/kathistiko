@@ -7,6 +7,7 @@ This guide covers deploying the Dashboard application to production servers.
 - A cross-compiled Linux binary (see [Cross-Compilation Guide](cross-compilation.md))
 - Target Linux server with glibc support
 - SSH access to the target server
+- [just](https://github.com/casey/just) command runner (recommended for easier deployment)
 
 ## Binary Deployment
 
@@ -14,6 +15,16 @@ The Dashboard application is compiled as a self-contained binary with no externa
 
 ### Transfer Binary to Server
 
+First, build the Linux binary:
+```bash
+# Using just (recommended)
+just build-linux
+
+# Or using cargo directly
+cargo build --release --target x86_64-unknown-linux-gnu
+```
+
+Then transfer to server:
 ```bash
 scp target/x86_64-unknown-linux-gnu/release/dashboard user@server:/path/to/deployment/
 ```
@@ -23,6 +34,23 @@ scp target/x86_64-unknown-linux-gnu/release/dashboard user@server:/path/to/deplo
 ```bash
 ssh user@server "chmod +x /path/to/deployment/dashboard"
 ```
+
+### Automated Deployment (Recommended)
+
+If you have [just](https://github.com/casey/just) configured, you can use the automated deployment commands:
+
+```bash
+# Full deployment: build + upload + restart service
+just deploy
+
+# Deploy without rebuilding (uses existing binary)
+just deploy-only
+
+# Full deployment with git pull
+just deploy-full
+```
+
+**Note**: The `just deploy` commands are configured for the specific server setup (`rbas@nabu`). You'll need to modify the `justfile` to match your server configuration.
 
 ## Configuration
 

@@ -20,16 +20,34 @@ A personal home dashboard application built with Rust and Axum that displays cal
 ### Running Locally
 
 1. Clone the repository
-2. Copy and configure settings:
+2. Install [just](https://github.com/casey/just) command runner (optional but recommended):
    ```bash
-   cp config.sample.toml config.local.toml
-   # Edit config.local.toml with your settings
+   # macOS
+   brew install just
+
+   # Or using cargo
+   cargo install just
    ```
-3. Run the application:
+3. Copy and configure settings:
    ```bash
+   # Using just
+   just config-init
+   # Edit config.local.toml with your settings
+
+   # Or manually
+   cp config.sample.toml config.local.toml
+   ```
+4. Run the application:
+   ```bash
+   # Using just
+   just dev
+
+   # Or using cargo directly
    cargo run
    ```
-4. Open your browser to `http://localhost:8042` (or your configured port)
+5. Open your browser to `http://localhost:8042` (or your configured port)
+
+To see all available commands: `just --list`
 
 ### Configuration
 
@@ -47,12 +65,24 @@ See `config.sample.toml` for all available options.
 ### Local Build
 
 ```bash
+# Using just (recommended)
+just build-release
+
+# Or using cargo directly
 cargo build --release
 ```
 
 ### Cross-Compilation for Linux
 
-For building Linux binaries from macOS, see our [Cross-Compilation Guide](docs/cross-compilation.md).
+```bash
+# Using just (recommended)
+just build-linux
+
+# Or using cargo directly
+cargo build --release --target x86_64-unknown-linux-gnu
+```
+
+For complete cross-compilation setup, see our [Cross-Compilation Guide](docs/cross-compilation.md).
 
 ## Project Structure
 
