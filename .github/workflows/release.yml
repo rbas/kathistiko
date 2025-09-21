@@ -50,7 +50,7 @@ jobs:
       - name: Make artifact folder
         shell: bash
         run: |
-          binary_name="kdashboard"
+          binary_name="dashboard"
 
           dirname="$binary_name-${{ matrix.target }}"
           mkdir "$dirname"
@@ -60,8 +60,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
-          name: kdashboard-${{ matrix.target }}
-          path: kdashboard-${{ matrix.target }}
+          name: dashboard-${{ matrix.target }}
+          path: dashboard-${{ matrix.target }}
 
   release:
     needs: [build]
@@ -123,5 +123,5 @@ jobs:
           make_latest: true
           body: ${{ steps.git-cliff.outputs.content }}
           files: |
-            kdashboard*
+            dashboard*
             checksums.txt
