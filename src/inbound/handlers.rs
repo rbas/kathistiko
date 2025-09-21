@@ -54,6 +54,23 @@ impl CalendarTemplate {
         format!("{}", self.current_date.format("%B"))
     }
 
+    pub fn get_smart_month_name(&self) -> String {
+        let full_month = format!("{}", self.current_date.format("%B"));
+        match full_month.as_str() {
+            "January" => "Jan".to_string(),
+            "February" => "Feb".to_string(),
+            "August" => "Aug".to_string(),
+            "September" => "Sep".to_string(),
+            "October" => "Oct".to_string(),
+            "November" => "Nov".to_string(),
+            "December" => "Dec".to_string(),
+            // Keep these full as they're short enough
+            "March" | "April" | "May" | "June" | "July" => full_month,
+            // Fallback for any other months
+            _ => full_month,
+        }
+    }
+
     pub fn living_room_temperature(&self) -> String {
         match &self.living_room {
             Some(room) => format!("{:05.2}", room.temperature()),
