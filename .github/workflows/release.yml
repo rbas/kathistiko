@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "*"
+  workflow_dispatch:
+    inputs:
+      tag_version:
+        description: 'Tag version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v0.1.0'
+        type: string
 
 permissions:
   contents: write
@@ -119,7 +126,8 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          name: Release ${{ github.event.inputs.tag_version || github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag_version || github.ref_name }}
           make_latest: true
           body: ${{ steps.git-cliff.outputs.content }}
           files: |
