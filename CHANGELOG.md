@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2025-09-21
+
+### 🐛 Bug Fixes
+
+- Fix wrong version update in cargo file
+
 ## [0.2.0] - 2025-09-21
 
 ### 🚀 Features
@@ -46,6 +52,7 @@
 - Add settings for markdown for editors
 - Enhance deploy scripts
 - Optimize binary size for release
+- *(release)* Update changelog and version for v0.2.0
 
 ## [0.1.0] - 2025-03-15
 
