@@ -183,18 +183,9 @@ release:
     CARGO_VERSION=${RELEASE_VERSION#v}
     echo "✅ Release version: ${RELEASE_VERSION}"
     echo "📝 Updating Cargo.toml version to ${CARGO_VERSION}..."
-    # Use a more precise approach: only update version in [package] section
-    awk -v new_version="$CARGO_VERSION" '
-    /^\[package\]/ { in_package = 1 }
-    /^\[/ && !/^\[package\]/ { in_package = 0 }
-    in_package && /^version = / { 
-        print "version = \"" new_version "\""
-        next 
-    }
-    { print }
-    ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
-    echo "🔄 Updating Cargo.lock with new version..."
-    cargo check --quiet
+    # Use cargo-edit to update version cleanly
+    cargo set-version ${CARGO_VERSION}
+    echo "✅ Cargo.toml and Cargo.lock updated automatically"
     echo "💾 Staging changelog, Cargo.toml, and Cargo.lock..."
     git add CHANGELOG.md Cargo.toml Cargo.lock
     echo "📝 Committing changelog and version bump..."
@@ -233,10 +224,10 @@ version-check:
     CURRENT_CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     LATEST_GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "no-tags")
     LATEST_TAG_VERSION=${LATEST_GIT_TAG#v}
-    
+
     echo "📦 Cargo.toml version: ${CURRENT_CARGO_VERSION}"
     echo "🏷️  Latest git tag: ${LATEST_GIT_TAG}"
-    
+
     if [ "$CURRENT_CARGO_VERSION" = "$LATEST_TAG_VERSION" ]; then
         echo "✅ Versions are in sync!"
     else
@@ -248,18 +239,8 @@ version-check:
 version-set version:
     #!/usr/bin/env bash
     echo "📝 Setting Cargo.toml version to {{version}}..."
-    # Use a more precise approach: only update version in [package] section
-    awk -v new_version="{{version}}" '
-    /^\[package\]/ { in_package = 1 }
-    /^\[/ && !/^\[package\]/ { in_package = 0 }
-    in_package && /^version = / { 
-        print "version = \"" new_version "\""
-        next 
-    }
-    { print }
-    ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
-    echo "🔄 Updating Cargo.lock with new version..."
-    cargo check --quiet
+    # Use cargo-edit to update version cleanly
+    cargo set-version {{version}}
     echo "✅ Cargo.toml and Cargo.lock updated to {{version}}"
     echo "💡 Don't forget to commit these changes if desired"
 
@@ -292,19 +273,25 @@ env:
 install-deps:
     #!/usr/bin/env bash
     echo "📦 Installing development dependencies..."
-    
+
     # Check and install cargo-watch
     if ! command -v cargo-watch > /dev/null; then
         echo "Installing cargo-watch..."
         cargo install cargo-watch
     fi
-    
+
     # Check and install git-cliff
     if ! command -v git-cliff > /dev/null; then
         echo "Installing git-cliff..."
         cargo install git-cliff
     fi
-    
+
+    # Check and install cargo-edit
+    if ! cargo set-version --help > /dev/null 2>&1; then
+        echo "Installing cargo-edit..."
+        cargo install cargo-edit
+    fi
+
     # Check cross-compilation toolchain
     if ! command -v x86_64-unknown-linux-gnu-gcc > /dev/null; then
         echo "❌ Cross-compilation toolchain not found"
@@ -313,5 +300,5 @@ install-deps:
     else
         echo "✅ Cross-compilation toolchain already installed"
     fi
-    
+
     echo "✅ Development environment setup complete"
