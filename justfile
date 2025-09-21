@@ -194,7 +194,7 @@ release:
     { print }
     ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
     echo "🔄 Updating Cargo.lock with new version..."
-    cargo update --package dashboard --precise ${CARGO_VERSION}
+    cargo check --quiet
     echo "💾 Staging changelog, Cargo.toml, and Cargo.lock..."
     git add CHANGELOG.md Cargo.toml Cargo.lock
     echo "📝 Committing changelog and version bump..."
@@ -259,7 +259,7 @@ version-set version:
     { print }
     ' Cargo.toml > Cargo.toml.tmp && mv Cargo.toml.tmp Cargo.toml
     echo "🔄 Updating Cargo.lock with new version..."
-    cargo update --package dashboard --precise {{version}}
+    cargo check --quiet
     echo "✅ Cargo.toml and Cargo.lock updated to {{version}}"
     echo "💡 Don't forget to commit these changes if desired"
 
