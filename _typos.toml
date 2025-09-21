@@ -1,2 +1,14 @@
 [default]
-extend-ignore-words-re = ["hass"]
+extend-ignore-words-re = [
+  "hass",
+  "toml",
+  "reqwest",
+  "axum",
+  "tokio",
+  "serde",
+  "chrono",
+  "icalendar",
+  "clap",
+  "fs",
+  "backend",
+]
