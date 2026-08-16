@@ -18,6 +18,15 @@
 #include "sensors.h"
 #include "battery.h"
 
+static_assert(POWER == 2, "Unexpected POWER pin");
+static_assert(BUSY == 4, "Unexpected BUSY pin");
+static_assert(RST == 16, "Unexpected RST pin");
+static_assert(DC == 17, "Unexpected DC pin");
+static_assert(CS == 5, "Unexpected CS pin");
+static_assert(SCK == 18, "Unexpected SCK pin");
+static_assert(MISO == -1, "Unexpected MISO pin");
+static_assert(MOSI == 23, "Unexpected MOSI pin");
+
 IPAddress getIp();
 int8_t getWifiStrength();
 uint8_t *fetchData(const String &url, size_t &dataSize);
@@ -92,8 +101,7 @@ void publishHomeAssistantDiscovery()
       "_battery_voltage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
       "_battery_voltage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_VOLTAGE_PATH +
       "\",\"device_class\":\"voltage\",\"state_class\":\"measurement\"," +
-      "\"unit_of_measurement\":\"V\",\"value_template\":\"{{ value | float }}\"," +
-      device + "}";
+      "\"unit_of_measurement\":\"V\"," + device + "}";
   client.publish(discoveryBase + "/battery_voltage/config", voltageConfig, true, 1);
 
   const String percentageConfig =
@@ -101,8 +109,7 @@ void publishHomeAssistantDiscovery()
       "_battery_percentage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
       "_battery_percentage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_PERCENTAGE_PATH +
       "\",\"device_class\":\"battery\",\"state_class\":\"measurement\"," +
-      "\"unit_of_measurement\":\"%\",\"value_template\":\"{{ value | int }}\"," +
-      device + "}";
+      "\"unit_of_measurement\":\"%\"," + device + "}";
   client.publish(discoveryBase + "/battery_percentage/config", percentageConfig, true, 1);
 }
 
@@ -114,9 +121,14 @@ void publishSensorsData(SensorData &data)
   client.publish(MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH, String(data.temperature));
   client.publish(MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH, String(data.humidity));
   client.publish(MQTT_TOPIC_BATTERY_VOLTAGE_PATH, String(battery.voltage, 3), true, 1);
-  client.publish(MQTT_TOPIC_BATTERY_PERCENTAGE_PATH, String(battery.percentage), true, 1);
-
-  Serial.printf("Battery: %.3f V (%u%% estimated)\n", battery.voltage, battery.percentage);
+  if (battery.percentageValid) {
+    client.publish(MQTT_TOPIC_BATTERY_PERCENTAGE_PATH, String(battery.percentage), true, 1);
+    Serial.printf("Battery: %.3f V (%u%% estimated)\n", battery.voltage,
+                  static_cast<unsigned int>(battery.percentage));
+  } else {
+    client.publish(MQTT_TOPIC_BATTERY_PERCENTAGE_PATH, "None", true, 1);
+    Serial.printf("Battery: %.3f V (outside valid percentage range)\n", battery.voltage);
+  }
 }
 void reportDownloadError(String message)
 {
@@ -147,7 +159,8 @@ bool connectToWiFi()
     return false;
   }
   Serial.println("WiFi connected");
-  Serial.printf("IP address: %s\n", getIp());
+  const String ipAddress = getIp().toString();
+  Serial.printf("IP address: %s\n", ipAddress.c_str());
   Serial.printf("Hostname: %s\n", WiFi.getHostname());
   Serial.println("Wifi Strength: " + String(getWifiStrength()) + " dB");
 
@@ -168,6 +181,8 @@ int8_t getWifiStrength()
 
 void initDisplay()
 {
+  Serial.printf("Display pins: power=%d busy=%d rst=%d dc=%d cs=%d sck=%d miso=%d mosi=%d\n",
+                POWER, BUSY, RST, DC, CS, SCK, MISO, MOSI);
   // Turn on power to the display
   pinMode(POWER, OUTPUT);
   digitalWrite(POWER, HIGH); // Turn the display power on (HIGH is the voltage level)
@@ -351,8 +366,8 @@ void loop()
   else
   {
     doSensorsWork();
-    Serial.printf("currentMillis %d\n", currentMillis);
-    Serial.printf("wakeUpCounter %d\n", wakeUpCounter);
+    Serial.printf("currentMillis %lu\n", currentMillis);
+    Serial.printf("wakeUpCounter %lu\n", wakeUpCounter);
 
     // Every 4th wake-up (i.e., after 1 hour), update the display
     if (wakeUpCounter == 1 || wakeUpCounter >= 12) {

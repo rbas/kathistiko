@@ -7,3 +7,4 @@
 /.pio
 /firmware/.pio
 /firmware/include/conf.h
+/firmware/compile_commands.json

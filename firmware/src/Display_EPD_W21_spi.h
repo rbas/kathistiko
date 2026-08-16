@@ -4,7 +4,7 @@
 
 // Board selection is supplied by platformio.ini.
 
-#ifdef ESPink_V2
+#ifdef ESPINK_V2
   #define MISO  -1
   #define MOSI  23
   #define SCK   18

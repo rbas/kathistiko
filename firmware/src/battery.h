@@ -5,6 +5,7 @@
 struct BatteryData {
   float voltage;
   uint8_t percentage;
+  bool percentageValid;
 };
 
 // A compact approximation of a single-cell Li-Po discharge curve. Voltage is
@@ -52,6 +53,10 @@ inline BatteryData readBattery() {
 
   const float adcVoltage = (millivoltSum / static_cast<float>(sampleCount)) / 1000.0f;
   const float batteryVoltage = adcVoltage * BATTERY_DIVIDER_RATIO;
-  return BatteryData{batteryVoltage, estimateBatteryPercentage(batteryVoltage)};
+  const bool percentageValid = batteryVoltage >= 3.0f && batteryVoltage <= 4.35f;
+  return BatteryData{
+      batteryVoltage,
+      estimateBatteryPercentage(batteryVoltage),
+      percentageValid,
+  };
 }
-
