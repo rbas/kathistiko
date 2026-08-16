@@ -164,3 +164,18 @@ h3 {
   font-size: 2em;
   font-weight: bold;
 }
+
+.battery-status {
+  position: absolute;
+  right: 6px;
+  bottom: 3px;
+  padding: 1px 2px;
+  background: #fff;
+  color: #000;
+  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}

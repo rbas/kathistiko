@@ -16,6 +16,7 @@
 // #include <ESP32AnalogRead.h>
 
 #include "sensors.h"
+#include "battery.h"
 
 IPAddress getIp();
 int8_t getWifiStrength();
@@ -25,6 +26,7 @@ uint8_t *fetchData(const String &url, size_t &dataSize);
 const String MQTT_TOPIC_BASE_PATH = "/home/" + String(HOSTNAME);
 const String MQTT_TOPIC_OTA_CONFIG_PATH = MQTT_TOPIC_BASE_PATH + "/config/ota";
 const String MQTT_TOPIC_BATTERY_VOLTAGE_PATH = MQTT_TOPIC_BASE_PATH + "/battery/voltage";
+const String MQTT_TOPIC_BATTERY_PERCENTAGE_PATH = MQTT_TOPIC_BASE_PATH + "/battery/percentage";
 const String MQTT_TOPIC_WIFI_STRENGTH_PATH = MQTT_TOPIC_BASE_PATH + "/wifi/strength";
 const String MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH = MQTT_TOPIC_BASE_PATH + "/environment/temperature";
 const String MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH = MQTT_TOPIC_BASE_PATH + "/environment/humidity";
@@ -33,7 +35,7 @@ const String MQTT_TOPIC_ERROR_REPORT_PATH = MQTT_TOPIC_BASE_PATH + "/error";
 RTC_DATA_ATTR unsigned long wakeUpCounter = 0; // Counter to track the number of wake-ups
 
 WiFiClient wiFiClient;
-MQTTClient client;
+MQTTClient client(512);
 
 bool OTAEnabled = false;
 
@@ -79,11 +81,42 @@ void subscribeToConfigChannel()
   client.subscribe(MQTT_TOPIC_OTA_CONFIG_PATH);
 }
 
+void publishHomeAssistantDiscovery()
+{
+  const String discoveryBase = "homeassistant/sensor/" + String(HOSTNAME);
+  const String device = "\"device\":{\"identifiers\":[\"" + String(HOSTNAME) +
+                        "\"],\"name\":\"Kathistiko\"}";
+
+  const String voltageConfig =
+      "{\"name\":\"Battery voltage\",\"unique_id\":\"" + String(HOSTNAME) +
+      "_battery_voltage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
+      "_battery_voltage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_VOLTAGE_PATH +
+      "\",\"device_class\":\"voltage\",\"state_class\":\"measurement\"," +
+      "\"unit_of_measurement\":\"V\",\"value_template\":\"{{ value | float }}\"," +
+      device + "}";
+  client.publish(discoveryBase + "/battery_voltage/config", voltageConfig, true, 1);
+
+  const String percentageConfig =
+      "{\"name\":\"Battery\",\"unique_id\":\"" + String(HOSTNAME) +
+      "_battery_percentage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
+      "_battery_percentage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_PERCENTAGE_PATH +
+      "\",\"device_class\":\"battery\",\"state_class\":\"measurement\"," +
+      "\"unit_of_measurement\":\"%\",\"value_template\":\"{{ value | int }}\"," +
+      device + "}";
+  client.publish(discoveryBase + "/battery_percentage/config", percentageConfig, true, 1);
+}
+
 void publishSensorsData(SensorData &data)
 {
+  const BatteryData battery = readBattery();
+
   client.publish(MQTT_TOPIC_WIFI_STRENGTH_PATH, String(getWifiStrength()));
   client.publish(MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH, String(data.temperature));
   client.publish(MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH, String(data.humidity));
+  client.publish(MQTT_TOPIC_BATTERY_VOLTAGE_PATH, String(battery.voltage, 3), true, 1);
+  client.publish(MQTT_TOPIC_BATTERY_PERCENTAGE_PATH, String(battery.percentage), true, 1);
+
+  Serial.printf("Battery: %.3f V (%u%% estimated)\n", battery.voltage, battery.percentage);
 }
 void reportDownloadError(String message)
 {
@@ -279,6 +312,7 @@ void setup()
 
   connectToMQTT();
   subscribeToConfigChannel();
+  publishHomeAssistantDiscovery();
 }
 
 void doDisplayWork() {

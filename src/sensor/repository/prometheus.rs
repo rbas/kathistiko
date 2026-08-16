@@ -5,7 +5,7 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use crate::sensor::{
-    model::{LivingRoom, Outdoor},
+    model::{Battery, LivingRoom, Outdoor},
     temperature::{Errors, SensorData, SensorName},
 };
 
@@ -84,12 +84,12 @@ impl TryFrom<ApiResponse> for Vec<SensorData> {
     }
 }
 
-async fn download_temperature_data(
+async fn download_sensor_data(
     hostname: &str,
     username: &str,
     password: &str,
 ) -> Result<ApiResponse, RepositoryError> {
-    let path = r#"/api/v1/query?query={__name__%3D~"hass_sensor_unit_u0x25u0x20rh|hass_sensor_unit_celsius"%2Centity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature"}"#;
+    let path = r#"/api/v1/query?query={entity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_battery|sensor.kathistiko_battery_percentage"}"#;
     let url = format!("{}{}", hostname, path);
     let client = reqwest::Client::new();
     let response = client
@@ -116,14 +116,14 @@ pub(super) async fn get_sensors_data(
     username: &str,
     password: &str,
 ) -> Result<Vec<SensorData>, RepositoryError> {
-    let api_response = download_temperature_data(hostname, username, password).await?;
+    let api_response = download_sensor_data(hostname, username, password).await?;
     let sensors = Vec::try_from(api_response)?;
     Ok(sensors)
 }
 
 pub(super) fn process_sensor_data(
     sensors: Vec<SensorData>,
-) -> (Option<LivingRoom>, Option<Outdoor>) {
+) -> (Option<LivingRoom>, Option<Outdoor>, Option<Battery>) {
     let living_room = match LivingRoom::try_from(sensors.clone()) {
         Ok(living_room) => Some(living_room),
         Err(err) => {
@@ -146,7 +146,15 @@ pub(super) fn process_sensor_data(
         }
     };
 
-    (living_room, outdoor)
+    let battery = match Battery::try_from(sensors) {
+        Ok(battery) => Some(battery),
+        Err(err) => {
+            log::debug!("Battery percentage is not available yet: {:#?}", err);
+            None
+        }
+    };
+
+    (living_room, outdoor, battery)
 }
 
 #[cfg(test)]
@@ -216,6 +224,16 @@ mod tests {
                   1748071727.064,
                   "57.66"
                 ]
+              },
+              {
+                "metric": {
+                  "__name__": "hass_sensor_unit_u0x25",
+                  "entity": "sensor.kathistiko_battery_percentage"
+                },
+                "value": [
+                  1748071727.064,
+                  "78"
+                ]
               }
             ]
           }
@@ -240,6 +258,9 @@ mod tests {
                 SensorName::KathistikoHumidity => {
                     assert_eq!(sensor.value, 57.66);
                     assert_eq!(sensor.captured_at.to_string(), "2025-05-24 07:28:47 UTC");
+                }
+                SensorName::KathistikoBatteryPercentage => {
+                    assert_eq!(sensor.value, 78.0);
                 }
             }
         }

@@ -17,6 +17,7 @@ pub enum SensorName {
     KairosHumidity,
     KathistikoTemperature,
     KathistikoHumidity,
+    KathistikoBatteryPercentage,
 }
 
 impl fmt::Display for SensorName {
@@ -26,6 +27,7 @@ impl fmt::Display for SensorName {
             SensorName::KairosHumidity => "Kairos.Humidity",
             SensorName::KathistikoTemperature => "Kathistiko.Temperature",
             SensorName::KathistikoHumidity => "Kathistiko.Humidity",
+            SensorName::KathistikoBatteryPercentage => "Kathistiko.BatteryPercentage",
         };
         write!(f, "{}", name)
     }
@@ -40,6 +42,9 @@ impl TryFrom<&str> for SensorName {
             "sensor.kairos_humidity" => Ok(SensorName::KairosHumidity),
             "sensor.kathistiko_temperature" => Ok(SensorName::KathistikoTemperature),
             "sensor.kathistiko_humidity" => Ok(SensorName::KathistikoHumidity),
+            "sensor.kathistiko_battery" | "sensor.kathistiko_battery_percentage" => {
+                Ok(SensorName::KathistikoBatteryPercentage)
+            }
             _ => Err(Errors::InvalidSensorName),
         }
     }
@@ -85,6 +90,11 @@ mod tests {
         match SensorName::try_from("sensor.kathistiko_humidity") {
             Ok(name) => assert!(matches!(name, SensorName::KathistikoHumidity)),
             Err(_) => panic!("Expected Ok(SensorName::KathistikoHumidity), got Err"),
+        }
+
+        match SensorName::try_from("sensor.kathistiko_battery_percentage") {
+            Ok(name) => assert!(matches!(name, SensorName::KathistikoBatteryPercentage)),
+            Err(_) => panic!("Expected battery percentage sensor, got Err"),
         }
     }
 

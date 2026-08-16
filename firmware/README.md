@@ -26,3 +26,19 @@ pio device monitor
 The initial migration continues to use the public `/latest` endpoint. Once the
 new firmware is verified on the device, set `IMAGE_SERVER_URL` in `conf.h` to
 the service's internal-network address.
+
+## Battery telemetry
+
+ESPink v2.x battery voltage is sampled on GPIO 34 through the board's 1.769388
+voltage divider. The firmware averages 16 calibrated ADC readings and publishes
+retained MQTT values to:
+
+- `/home/<hostname>/battery/voltage`
+- `/home/<hostname>/battery/percentage`
+
+The percentage is an estimate derived from a typical single-cell Li-Po discharge
+curve; voltage is retained separately for diagnostics and calibration. Firmware
+also publishes Home Assistant MQTT discovery records for both sensors. The
+dashboard displays the percentage as small `BAT 78%` text in the bottom-right
+corner when `sensor.<hostname>_battery_percentage` is available through its
+Prometheus data source.

@@ -90,6 +90,12 @@
                     </div>
                 </div>
             {% endif %}
+
+            {% if let Some(battery) = battery %}
+                <div class="battery-status" aria-label="Display battery">
+                    BAT {{ battery.percentage() }}%
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

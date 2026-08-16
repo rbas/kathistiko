@@ -1,6 +1,28 @@
 use super::temperature::{Errors, SensorData, SensorName};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct Battery {
+    percentage_sensor: SensorData,
+}
+
+impl Battery {
+    pub fn percentage(&self) -> u8 {
+        self.percentage_sensor.value.round().clamp(0.0, 100.0) as u8
+    }
+}
+
+impl TryFrom<Vec<SensorData>> for Battery {
+    type Error = Errors;
+
+    fn try_from(sensors: Vec<SensorData>) -> Result<Self, Self::Error> {
+        let percentage = extract_sensor_data(sensors, SensorName::KathistikoBatteryPercentage)?;
+        Ok(Self {
+            percentage_sensor: percentage,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct LivingRoom {
     temperature_sensor: SensorData,
     humidity_sensor: SensorData,
@@ -65,4 +87,28 @@ fn extract_sensor_data(sensors: Vec<SensorData>, name: SensorName) -> Result<Sen
         .into_iter()
         .find(|sensor| sensor.name == name)
         .ok_or(Errors::MissingSensorData(name))
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+
+    use super::*;
+
+    fn battery_with_percentage(value: f32) -> Battery {
+        Battery::try_from(vec![SensorData::new(
+            SensorName::KathistikoBatteryPercentage,
+            value,
+            Utc::now(),
+        )])
+        .unwrap()
+    }
+
+    #[test]
+    fn battery_percentage_is_rounded_and_bounded() {
+        assert_eq!(battery_with_percentage(78.4).percentage(), 78);
+        assert_eq!(battery_with_percentage(78.6).percentage(), 79);
+        assert_eq!(battery_with_percentage(-5.0).percentage(), 0);
+        assert_eq!(battery_with_percentage(105.0).percentage(), 100);
+    }
 }

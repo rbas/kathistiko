@@ -18,3 +18,7 @@
 #define IMAGE_SERVER_URL "https://kathistiko-backend.masovice.net/latest"
 
 #define SLEEP_SECONDS 1800
+
+// LaskaKit ESPink v2.x battery voltage divider.
+#define BATTERY_ADC_PIN 34
+#define BATTERY_DIVIDER_RATIO 1.769388f

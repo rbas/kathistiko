@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::sensor::model::{LivingRoom, Outdoor};
+use crate::sensor::model::{Battery, LivingRoom, Outdoor};
 
 use super::prometheus::{get_sensors_data, process_sensor_data, RepositoryError};
 
@@ -20,8 +20,8 @@ pub async fn load_sensors_data(
     hostname: &str,
     username: &str,
     password: &str,
-) -> Result<(Option<LivingRoom>, Option<Outdoor>), Errors> {
+) -> Result<(Option<LivingRoom>, Option<Outdoor>, Option<Battery>), Errors> {
     let sensors = get_sensors_data(hostname, username, password).await?;
-    let (living_room, outdoor) = process_sensor_data(sensors);
-    Ok((living_room, outdoor))
+    let (living_room, outdoor, battery) = process_sensor_data(sensors);
+    Ok((living_room, outdoor, battery))
 }

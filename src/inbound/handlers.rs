@@ -14,7 +14,7 @@ use crate::{
         trash_events::{generate_periodical_events, PeriodicalItem},
     },
     sensor::{
-        model::{LivingRoom, Outdoor},
+        model::{Battery, LivingRoom, Outdoor},
         repository::repo::load_sensors_data,
     },
 };
@@ -47,6 +47,7 @@ pub struct CalendarTemplate {
     pub calendar_items: Option<Vec<Item>>,
     pub living_room: Option<LivingRoom>,
     pub outdoor: Option<Outdoor>,
+    pub battery: Option<Battery>,
 }
 
 impl CalendarTemplate {
@@ -121,12 +122,14 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
         calendar_items,
         living_room: None,
         outdoor: None,
+        battery: None,
     };
 
     match result {
-        Ok((living_room, outdoor)) => {
+        Ok((living_room, outdoor, battery)) => {
             template.living_room = living_room;
             template.outdoor = outdoor;
+            template.battery = battery;
         }
         Err(err) => {
             error!("Cannot read data from temperature sensors {:#?}", err);
