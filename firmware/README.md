@@ -40,5 +40,5 @@ The percentage is an estimate derived from a typical single-cell Li-Po discharge
 curve; voltage is retained separately for diagnostics and calibration. Firmware
 also publishes Home Assistant MQTT discovery records for both sensors. The
 dashboard displays the percentage as small `BAT 78%` text in the bottom-right
-corner when `sensor.<hostname>_battery_percentage` is available through its
-Prometheus data source.
+corner when `sensor.<hostname>_display_battery_percentage` is available through
+its Prometheus data source.

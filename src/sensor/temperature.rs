@@ -42,7 +42,9 @@ impl TryFrom<&str> for SensorName {
             "sensor.kairos_humidity" => Ok(SensorName::KairosHumidity),
             "sensor.kathistiko_temperature" => Ok(SensorName::KathistikoTemperature),
             "sensor.kathistiko_humidity" => Ok(SensorName::KathistikoHumidity),
-            "sensor.kathistiko_battery_percentage" => Ok(SensorName::KathistikoBatteryPercentage),
+            "sensor.kathistiko_display_battery_percentage" => {
+                Ok(SensorName::KathistikoBatteryPercentage)
+            }
             _ => Err(Errors::InvalidSensorName),
         }
     }
@@ -90,7 +92,7 @@ mod tests {
             Err(_) => panic!("Expected Ok(SensorName::KathistikoHumidity), got Err"),
         }
 
-        match SensorName::try_from("sensor.kathistiko_battery_percentage") {
+        match SensorName::try_from("sensor.kathistiko_display_battery_percentage") {
             Ok(name) => assert!(matches!(name, SensorName::KathistikoBatteryPercentage)),
             Err(_) => panic!("Expected battery percentage sensor, got Err"),
         }

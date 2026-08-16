@@ -44,7 +44,7 @@ const String MQTT_TOPIC_ERROR_REPORT_PATH = MQTT_TOPIC_BASE_PATH + "/error";
 RTC_DATA_ATTR unsigned long wakeUpCounter = 0; // Counter to track the number of wake-ups
 
 WiFiClient wiFiClient;
-MQTTClient client(512);
+MQTTClient client(1024);
 
 bool OTAEnabled = false;
 
@@ -96,21 +96,26 @@ void publishHomeAssistantDiscovery()
   const String device = "\"device\":{\"identifiers\":[\"" + String(HOSTNAME) +
                         "\"],\"name\":\"Kathistiko\"}";
 
+  // Remove the short-lived discovery identities used before the display
+  // battery entity names were made explicit.
+  client.publish(discoveryBase + "/battery_voltage/config", "", true, 1);
+  client.publish(discoveryBase + "/battery_percentage/config", "", true, 1);
+
   const String voltageConfig =
-      "{\"name\":\"Battery voltage\",\"unique_id\":\"" + String(HOSTNAME) +
-      "_battery_voltage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
-      "_battery_voltage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_VOLTAGE_PATH +
+      "{\"name\":\"Display battery voltage\",\"unique_id\":\"" + String(HOSTNAME) +
+      "_display_battery_voltage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
+      "_display_battery_voltage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_VOLTAGE_PATH +
       "\",\"device_class\":\"voltage\",\"state_class\":\"measurement\"," +
       "\"unit_of_measurement\":\"V\"," + device + "}";
-  client.publish(discoveryBase + "/battery_voltage/config", voltageConfig, true, 1);
+  client.publish(discoveryBase + "/display_battery_voltage/config", voltageConfig, true, 1);
 
   const String percentageConfig =
-      "{\"name\":\"Battery\",\"unique_id\":\"" + String(HOSTNAME) +
-      "_battery_percentage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
-      "_battery_percentage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_PERCENTAGE_PATH +
+      "{\"name\":\"Display battery\",\"unique_id\":\"" + String(HOSTNAME) +
+      "_display_battery_percentage\",\"default_entity_id\":\"sensor." + String(HOSTNAME) +
+      "_display_battery_percentage\",\"state_topic\":\"" + MQTT_TOPIC_BATTERY_PERCENTAGE_PATH +
       "\",\"device_class\":\"battery\",\"state_class\":\"measurement\"," +
       "\"unit_of_measurement\":\"%\"," + device + "}";
-  client.publish(discoveryBase + "/battery_percentage/config", percentageConfig, true, 1);
+  client.publish(discoveryBase + "/display_battery_percentage/config", percentageConfig, true, 1);
 }
 
 void publishSensorsData(SensorData &data)
