@@ -40,6 +40,20 @@ impl Item {
         self.start_date.format("%A").to_string()
     }
 
+    pub fn start_date_short_week_day(&self) -> String {
+        self.start_date.format("%a").to_string().to_uppercase()
+    }
+
+    pub fn display_summary(&self) -> String {
+        self.summary
+            .chars()
+            .filter(|character| !is_unsupported_display_symbol(*character))
+            .collect::<String>()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
     // Method to get start_date day
     pub fn start_date_day(&self) -> String {
         self.start_date.format("%d").to_string()
@@ -86,6 +100,13 @@ impl Item {
             None => 0,
         }
     }
+}
+
+fn is_unsupported_display_symbol(character: char) -> bool {
+    matches!(
+        character as u32,
+        0x200D | 0x2600..=0x27BF | 0xFE0E..=0xFE0F | 0x1F000..=0x1FAFF
+    )
 }
 
 impl From<&Event> for Item {
@@ -323,6 +344,19 @@ mod tests {
         );
 
         assert_eq!(item.number_of_days(), 2);
+    }
+
+    #[test]
+    fn display_summary_removes_unsupported_emoji_but_keeps_text_scripts() {
+        let item = Item::new(
+            "Sněžka 🇨🇿 · Маник".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 24).unwrap(),
+            None,
+            None,
+            None,
+        );
+
+        assert_eq!(item.display_summary(), "Sněžka · Маник");
     }
 
     #[test]

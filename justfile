@@ -52,6 +52,7 @@ build-release:
 # Build for Linux deployment (cross-compilation)
 build-linux: _ensure-linux-target
     #!/usr/bin/env bash
+    set -euo pipefail
     echo "🔨 Building for Linux (x86_64-unknown-linux-gnu)..."
     cargo build --release --target x86_64-unknown-linux-gnu
     echo "✅ Linux binary built: target/x86_64-unknown-linux-gnu/release/dashboard"

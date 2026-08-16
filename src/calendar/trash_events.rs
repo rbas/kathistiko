@@ -1,5 +1,12 @@
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrashTaskStatus {
+    Today,
+    Tomorrow,
+    ThisWeek,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct PeriodicalItem {
     pub summary: String,
@@ -19,23 +26,48 @@ impl PeriodicalItem {
         self.start_date.format("%A").to_string() // %A is the full weekday name (e.g., "Monday")
     }
 
+    pub fn short_week_day(&self) -> String {
+        self.start_date.format("%a").to_string().to_uppercase()
+    }
+
+    pub fn day(&self) -> u32 {
+        self.start_date.day()
+    }
+
+    pub fn status_on(&self, today: NaiveDate) -> Option<TrashTaskStatus> {
+        if self.start_date < today {
+            None
+        } else if self.start_date == today {
+            Some(TrashTaskStatus::Today)
+        } else if self.start_date == today + chrono::Duration::days(1) {
+            Some(TrashTaskStatus::Tomorrow)
+        } else if self.start_date.iso_week() == today.iso_week() {
+            Some(TrashTaskStatus::ThisWeek)
+        } else {
+            None
+        }
+    }
+
+    fn status(&self) -> Option<TrashTaskStatus> {
+        self.status_on(Local::now().date_naive())
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.status().is_some()
+    }
+
     // Method to check if start_date is today
     pub fn is_today(&self) -> bool {
-        let today = Local::now().date_naive();
-        // Compare start_date with today's date
-        self.start_date == today
+        self.status() == Some(TrashTaskStatus::Today)
     }
 
     // Method to check if start_date is tomorrow
     pub fn is_tomorrow(&self) -> bool {
-        let today = Local::now().date_naive();
-        // Compare start_date with tomorrow's date
-        self.start_date == (today + chrono::Duration::days(1))
+        self.status() == Some(TrashTaskStatus::Tomorrow)
     }
 
-    pub fn is_old(&self) -> bool {
-        let today = Local::now().date_naive();
-        self.start_date < today
+    pub fn is_this_week(&self) -> bool {
+        self.status() == Some(TrashTaskStatus::ThisWeek)
     }
 }
 
@@ -96,7 +128,7 @@ mod test {
     use chrono::{NaiveDate, Weekday};
 
     use crate::calendar::trash_events::{
-        generate_periodical_events, get_weekday_of_week, PeriodicalItem,
+        generate_periodical_events, get_weekday_of_week, PeriodicalItem, TrashTaskStatus,
     };
 
     #[test]
@@ -208,5 +240,43 @@ mod test {
         let expected = NaiveDate::from_ymd_opt(2025, 3, 12).unwrap();
         let actual = get_weekday_of_week(date, Weekday::Wed);
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn trash_task_moves_through_visible_statuses_then_disappears() {
+        let task = PeriodicalItem::new(
+            "General waste".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 20).unwrap(),
+        );
+
+        assert_eq!(
+            task.status_on(NaiveDate::from_ymd_opt(2025, 3, 17).unwrap()),
+            Some(TrashTaskStatus::ThisWeek)
+        );
+        assert_eq!(
+            task.status_on(NaiveDate::from_ymd_opt(2025, 3, 19).unwrap()),
+            Some(TrashTaskStatus::Tomorrow)
+        );
+        assert_eq!(
+            task.status_on(NaiveDate::from_ymd_opt(2025, 3, 20).unwrap()),
+            Some(TrashTaskStatus::Today)
+        );
+        assert_eq!(
+            task.status_on(NaiveDate::from_ymd_opt(2025, 3, 21).unwrap()),
+            None
+        );
+    }
+
+    #[test]
+    fn trash_task_outside_current_week_is_hidden() {
+        let task = PeriodicalItem::new(
+            "Plastic waste".to_string(),
+            NaiveDate::from_ymd_opt(2025, 3, 25).unwrap(),
+        );
+
+        assert_eq!(
+            task.status_on(NaiveDate::from_ymd_opt(2025, 3, 17).unwrap()),
+            None
+        );
     }
 }

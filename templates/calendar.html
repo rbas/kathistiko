@@ -1,102 +1,104 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="dashboard">
-    <div class="container">
-        <!-- Current Date -->
-        <div class="date">
-            <div class="date-left">
-                <span>{{ current_date.format("%A") }}</span>
-            </div>
-            <div class="date-right">
-              <span>{{ current_date.day() }}</span>
-              {{ self.get_smart_month_name() }}
-            </div>
+<main class="dashboard">
+    <header class="masthead">
+        <div class="masthead-copy">
+            <div class="month-year">{{ current_date.format("%B %Y") }}</div>
+            <div class="weekday">{{ current_date.format("%A") }}</div>
         </div>
-        <!-- Trash Events -->
-        {% if let Some(trash_events) = periodical_items %}
-            <div class="trash-events">
-            {% for item in trash_events %}
-                {% if item.is_old() == false %}
-                <div class="box {% if item.is_today() || item.is_tomorrow() %}attention{% endif %}">
-                      <div class="trash-event">
-                          <div class="trash-event-summary">{{ item.summary }}</div>
-                          <div class="trash-event-day">
-                              {% if item.is_today() %}
-                                  Today
-                              {% else if item.is_tomorrow() %}
-                                  Tomorrow
-                              {% else %}
-                                  {{ item.week_day() }}
-                              {% endif %}
-                          </div>
-                      </div>
-                  </div>
-                  {% endif %}
-            {% endfor %}
-            </div>
+        <div class="current-day">{{ current_date.day() }}</div>
+    </header>
+
+    <div class="dashboard-content">
+        {% if let Some(trash_tasks) = periodical_items %}
+            <section class="trash-tasks" aria-label="Bin collection tasks">
+                {% for item in trash_tasks %}
+                    {% if item.is_visible() %}
+                        <article class="trash-task {% if item.is_today() %}trash-task--today{% else if item.is_tomorrow() %}trash-task--tomorrow{% else %}trash-task--this-week{% endif %}">
+                            <div class="trash-status">
+                                {% if item.is_today() %}
+                                    TODAY · PUT BIN OUT
+                                {% else if item.is_tomorrow() %}
+                                    TOMORROW
+                                {% else if item.is_this_week() %}
+                                    THIS WEEK
+                                {% endif %}
+                            </div>
+                            <div class="trash-task-row">
+                                <strong>{{ item.summary }}</strong>
+                                <span>{{ item.short_week_day() }} {{ item.day() }}</span>
+                            </div>
+                        </article>
+                    {% endif %}
+                {% endfor %}
+            </section>
         {% endif %}
 
-        <!-- Calendar Events -->
         {% if let Some(events) = calendar_items %}
-            {% for event in events %}
-                <div class="box">
-                    <h4>{{ event.summary }}</h4>
-                    <div class="event-details">
-                        <div class="event-date">
-                            <span>{{ event.start_date_week_day() }} <b>{{ event.start_date_day() }}</b>. {{ event.start_date_month() }}.</span>
-                            {% if !event.is_day_event() %}
-                                {% if event.end_date.is_some() %}
-                                    <span>&ndash; <b>{{ event.end_date_day().unwrap() }}</b>. {{ event.end_date_month().unwrap() }}.</span>
-                                {% endif %}
-                            {% endif %}
+            <section class="agenda" aria-label="Upcoming calendar events">
+                {% for event in events %}
+                    <article class="agenda-event">
+                        <div class="agenda-title-row">
+                            <h2>{{ event.display_summary() }}</h2>
+                            <span class="agenda-date">{{ event.start_date_short_week_day() }} {{ event.start_date_day() }}</span>
                         </div>
-                        <div class="event-time">
-                            {% if event.start_time.is_some() %}
-                                <span class="time">{{ event.start_time.unwrap().format("%H:%M") }}</span>
-                                {% if event.end_time.is_some() %}
-                                    <span>&ndash; {{ event.end_time.unwrap().format("%H:%M") }}</span>
+                        <div class="agenda-details">
+                            <span>
+                                {{ event.start_date_day() }}. {{ event.start_date_month() }}.
+                                {% if !event.is_day_event() %}
+                                    {% if event.end_date.is_some() %}
+                                        &ndash; {{ event.end_date_day().unwrap() }}. {{ event.end_date_month().unwrap() }}.
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
-                            {% if !event.is_day_event() && event.number_of_days() > 1 %}
-                                <span class="number-of-days">{{ event.number_of_days() }} days</span>
-                            {% endif %}
+                            </span>
+                            <span>
+                                {% if event.start_time.is_some() %}
+                                    {{ event.start_time.unwrap().format("%H:%M") }}
+                                    {% if event.end_time.is_some() %}
+                                        &ndash; {{ event.end_time.unwrap().format("%H:%M") }}
+                                    {% endif %}
+                                {% else if !event.is_day_event() && event.number_of_days() > 1 %}
+                                    {{ event.number_of_days() }} days
+                                {% else %}
+                                    All day
+                                {% endif %}
+                            </span>
                         </div>
-                    </div>
-                </div>
-            {% endfor %}
+                    </article>
+                {% endfor %}
+            </section>
         {% endif %}
-        <!-- Temperature Sensors -->
-        <div class="temperature-section">
+    </div>
+
+    <footer class="sensor-footer">
+        <div class="sensor-reading">
+            <span class="sensor-label">OUTSIDE</span>
             {% if let Some(outdoor) = outdoor %}
-                <div class="temperature-card">
-                    <div class="temperature-value">
-                      <span class="material-icons" aria-hidden="true">park</span>
-                      {{ outdoor.temperature() }}°C
-                    </div>
-                    <div class="humidity-value">
-                      {{ outdoor.humidity() }}&nbsp;%RH
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if let Some(living_room) = living_room %}
-                <div class="temperature-card">
-                    <div class="temperature-value">
-                        <span class="material-icons" aria-hidden="true">home</span>
-                        {{ living_room.temperature() }}°C
-                    </div>
-                    <div class="humidity-value">
-                      {{ living_room.humidity() }}&nbsp;%RH
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if let Some(battery) = battery %}
-                <div class="battery-status" aria-label="Display battery">
-                    BAT {{ battery.percentage() }}%
-                </div>
+                <strong>{{ outdoor.temperature() }}°C</strong>
+                <small>{{ outdoor.humidity() }}% RH</small>
+            {% else %}
+                <strong>&ndash;°C</strong>
+                <small>NO DATA</small>
             {% endif %}
         </div>
-    </div>
-</div>
+        <div class="sensor-reading">
+            <span class="sensor-label">ROOM</span>
+            {% if let Some(living_room) = living_room %}
+                <strong>{{ living_room.temperature() }}°C</strong>
+                <small>{{ living_room.humidity() }}% RH</small>
+            {% else %}
+                <strong>&ndash;°C</strong>
+                <small>NO DATA</small>
+            {% endif %}
+        </div>
+        <div class="battery-reading">
+            <span class="sensor-label">BATTERY</span>
+            {% if let Some(battery) = battery %}
+                <strong>{{ battery.percentage() }}%</strong>
+            {% else %}
+                <strong>&ndash;</strong>
+            {% endif %}
+        </div>
+    </footer>
+</main>
 {% endblock %}

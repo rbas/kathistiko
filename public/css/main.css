@@ -1,181 +1,223 @@
 * {
-  font-optical-sizing: auto;
-
-  font-family: "Oxanium", sans-serif;
-
-  /* font-weight: 400; */
-  /* font-style: normal; */
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: none;
-  /* Disable anti-aliasing */
-  font-smooth: never;
-  /* For newer browsers like Firefox */
 }
 
-body,
-html {
+html,
+body {
   width: 100%;
   height: 100%;
-  background-color: #f4f4f4;
-}
-
-h1,
-h2,
-h3 {
-  font-family: "Orbitron", sans-serif;
-
-  font-weight: 700;
-  text-align: right;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: "Liberation Sans", Arial, sans-serif;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .dashboard {
-  box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 1fr;
-  /* Two equal columns */
-  grid-template-rows: auto;
-  /* Two equal rows */
+  position: relative;
   width: 480px;
   height: 800px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  background-color: #fff;
-}
-
-.container {
-  padding: 10px;
-  align-items: left;
-  justify-content: left;
-}
-
-.container>div {}
-
-.box {
-  padding: 10px;
-  border: 1px solid #000;
-  border-radius: 5px;
-  display: block;
-  /* Changed from flex to block for better layout control */
-  margin-bottom: 10px;
-  /* Add some space between events for better readability */
-}
-
-.attention {
-  color: #fff;
-  background-color: #000;
-}
-
-.box h4 {
-  margin-bottom: 3px;
-  font-size: 1.3em;
-  font-weight: bold;
-}
-
-.event-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.event-date {
-  display: flex;
-  gap: 0.5em;
-}
-
-.event-date span {
-  display: block;
-  /* Ensure each date part is on a new line */
-  font-weight: bold;
-}
-
-.number-of-days {
-  margin-left: auto;
-  /* Align to the right */
-}
-
-.date {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 3em;
-  /* Increase the font size */
-}
-
-.date-left {
-  display: flex;
-  gap: 0.5em;
-}
-
-.date-right span:first-child {
-  font-weight: bold;
-  /* Make the number bolder */
-}
-
-.date-right {
-  margin-left: auto;
-}
-
-.trash-events {
-  margin-bottom: 25px;
-}
-
-.trash-event {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.trash-event-summary {
-  font-weight: bold;
-  font-size: 1.2em
-}
-
-.trash-event-day {
-  margin-left: auto;
-  /* Align to the right */
-}
-
-.temperature-section {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  background-color: white;
-  padding: 10px 0;
-  z-index: 100;
-  border-top: 1px solid #000;
-}
-
-.temperature-card {
-  text-align: center;
-  padding: 10px;
-  min-width: 100px;
-}
-
-.humidity-value {
-  letter-spacing: 0.05em;
-}
-
-.temperature-value {
-  font-size: 2em;
-  font-weight: bold;
-}
-
-.battery-status {
-  position: absolute;
-  right: 6px;
-  bottom: 3px;
-  padding: 1px 2px;
+  overflow: hidden;
   background: #fff;
-  color: #000;
-  font-family: sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+}
+
+.masthead {
+  height: 126px;
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 20px 13px;
+  background: #000;
+  color: #fff;
+}
+
+.masthead-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.month-year,
+.sensor-label,
+.trash-status,
+.agenda-date {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+}
+
+.month-year {
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.weekday {
+  font-family: "Liberation Serif", Georgia, serif;
+  font-size: 42px;
+  font-weight: 700;
   line-height: 1;
+}
+
+.current-day {
+  align-self: center;
+  color: #fff;
+  font-size: 84px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -4px;
+}
+
+.dashboard-content {
+  height: 586px;
+  padding: 10px 20px 0;
+  overflow: hidden;
+}
+
+.trash-tasks:empty {
+  display: none;
+}
+
+.trash-task {
+  min-height: 60px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 2px solid #000;
+  font-family: "Liberation Sans", Arial, sans-serif;
+}
+
+.trash-task--tomorrow {
+  border-width: 4px;
+  padding: 6px 8px;
+}
+
+.trash-task--today {
+  background: #000;
+  color: #fff;
+}
+
+.trash-status {
+  margin-bottom: 5px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.trash-task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.trash-task-row strong {
+  font-size: 21px;
+  line-height: 1.05;
+}
+
+.trash-task-row span {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agenda-event {
+  min-height: 68px;
+  padding: 10px 0 9px;
+  border-bottom: 2px solid #000;
+}
+
+.agenda-title-row,
+.agenda-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agenda-title-row {
+  align-items: baseline;
+}
+
+.agenda-title-row h2 {
+  min-width: 0;
+  overflow: hidden;
+  font-family: "Liberation Serif", Georgia, serif;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-date {
+  flex: none;
+  font-size: 11px;
   letter-spacing: 0;
   white-space: nowrap;
+}
+
+.agenda-details {
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.agenda-details span:last-child {
+  flex: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sensor-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 88px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 78px;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 20px 8px;
+  border-top: 4px solid #000;
+  background: #fff;
+}
+
+.sensor-reading,
+.battery-reading {
+  min-width: 0;
+}
+
+.sensor-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.sensor-reading strong,
+.battery-reading strong {
+  display: block;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.sensor-reading small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.battery-reading {
+  align-self: end;
+  padding-bottom: 2px;
+  text-align: right;
+}
+
+.battery-reading strong {
+  font-size: 18px;
 }
