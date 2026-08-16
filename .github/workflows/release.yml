@@ -52,6 +52,8 @@ jobs:
           fi
       - name: Running cargo build
         shell: bash
+        env:
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.sys-type == 'linux' && 'gcc' || '' }}
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Make artifact folder
