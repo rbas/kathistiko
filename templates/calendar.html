@@ -3,7 +3,7 @@
 <main class="dashboard">
     <header class="masthead">
         <div class="masthead-copy">
-            <div class="month-year">{{ current_date.format("%B %Y") }}</div>
+            <div class="month-name">{{ current_date.format("%B") }}</div>
             <div class="weekday">{{ current_date.format("%A") }}</div>
         </div>
         <div class="current-day">{{ current_date.day() }}</div>
