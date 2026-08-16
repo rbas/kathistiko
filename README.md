@@ -1,6 +1,8 @@
-# Dashboard
+# Kathistiko
 
-A personal home dashboard application built with Rust and Axum that displays calendar events, trash collection schedules, and sensor data in a clean web interface.
+A personal home dashboard and e-paper image backend built with Rust and Axum.
+It displays calendar events, trash collection schedules, and sensor data while
+serving the packed bitmap consumed by the Kathistiko ESP32 display.
 
 ## Features
 
@@ -9,6 +11,26 @@ A personal home dashboard application built with Rust and Axum that displays cal
 - 🌡️ **Sensor Data** - Monitor temperature and other sensor readings
 - 🎨 **Clean Web Interface** - Responsive dashboard with modern CSS styling
 - ⚡ **Fast & Lightweight** - Built in Rust for optimal performance
+- 🖥️ **E-paper Output** - Generates and serves the packed 800×480 bitmap used by the ESP32
+
+## Unified Service
+
+The dashboard and e-paper backend run in this single Axum service. A background
+worker captures the local `/calendar` page through the snapshot container,
+converts it to the display orientation, and publishes the 48,000-byte packed
+bitmap at `/latest`.
+
+Production routes:
+
+- `/calendar` renders the browser dashboard.
+- `/latest` preserves the existing ESP32 firmware contract.
+- `/assets/converted_image.png` exposes the converted image for diagnostics.
+- `/health/live` reports whether the HTTP service is running.
+- `/health/ready` reports readiness after the first display image is available.
+
+Rendering is configured in the `[display]` section. An optional
+`display.local.toml` next to the main configuration file can override that
+section without modifying a configuration containing credentials.
 
 ## Quick Start
 

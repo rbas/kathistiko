@@ -1,3 +1,6 @@
 /target
 /fixtures
 /config.local.toml
+/display.local.toml
+/output
+/node_modules

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0] - 2026-08-16
+
+### 🚀 Features
+
+- Merge the dashboard and e-paper rendering backend into one service
+- Preserve the existing 48,000-byte `/latest` firmware endpoint
+- Add display readiness and liveness endpoints
+- Render the dashboard through an internal loopback URL
+
+### 🛠️ Reliability
+
+- Generate the first display image immediately at startup
+- Retry failed rendering without terminating the background worker
+- Validate the packed bitmap size before publishing it
+- Keep image conversion and container execution off async worker threads
+
+### 📦 Deployment
+
+- Add the reproducible Podman/Docker snapshot container to this repository
+- Route both existing public hostnames to the unified service
+- Retire the legacy `kathistikobackend` systemd service
+
 ## [0.2.2] - 2025-09-21
 
 ### ⚙️ Miscellaneous Tasks

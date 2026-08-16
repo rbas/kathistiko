@@ -87,7 +87,7 @@ pub async fn calendar_handler(State(state): State<AppState>) -> impl IntoRespons
 
     let periodical_items = generate_periodical_events(date);
 
-    let urls = state.settings.calendars_urls;
+    let urls = state.settings.calendars_urls.clone();
     let offset = Days::new(state.settings.calendar_offset_days);
 
     let cache_folder = state.settings.tmp_folder.as_str();

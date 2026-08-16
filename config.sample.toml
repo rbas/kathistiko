@@ -7,3 +7,11 @@ cache_ttl_seconds = 1800
 prometheus_url = "url"
 prometheus_username = "username"
 prometheus_password = "password"
+
+[display]
+enabled = true
+source_url = "http://host.docker.internal:8000/calendar"
+refresh_interval_seconds = 900
+container_binary = "docker"
+working_directory = "."
+output_directory = "output"

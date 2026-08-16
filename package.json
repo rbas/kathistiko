@@ -1,0 +1,8 @@
+{
+  "name": "kathistiko-snapshot",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "puppeteer": "^25.7.0"
+  }
+}

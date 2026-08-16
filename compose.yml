@@ -1,0 +1,11 @@
+services:
+  snapshot:
+    build:
+      context: .
+      dockerfile: Dockerfile.snapshot
+    volumes:
+      - ./output:/app/output
+    environment:
+      - NODE_ENV=production
+    command: ["node", "snapshot.js"]
+    network_mode: "host"

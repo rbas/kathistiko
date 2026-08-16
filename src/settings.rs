@@ -15,10 +15,39 @@ pub struct Settings {
     pub prometheus_url: String,
     pub prometheus_username: String,
     pub prometheus_password: String,
+    #[serde(default)]
+    pub display: DisplaySettings,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+pub struct DisplaySettings {
+    pub enabled: bool,
+    pub source_url: String,
+    pub refresh_interval_seconds: u64,
+    pub container_binary: String,
+    pub working_directory: String,
+    pub output_directory: String,
+}
+
+impl Default for DisplaySettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            source_url: "http://127.0.0.1:8000/calendar".to_string(),
+            refresh_interval_seconds: 900,
+            container_binary: "docker".to_string(),
+            working_directory: ".".to_string(),
+            output_directory: "output".to_string(),
+        }
+    }
 }
 impl Settings {
     pub fn new(path: &Path) -> Result<Self, ServiceConfigurationError> {
-        let settings = Config::builder().add_source(File::from(path)).build()?;
+        let display_path = path.with_file_name("display.local.toml");
+        let settings = Config::builder()
+            .add_source(File::from(path))
+            .add_source(File::from(display_path).required(false))
+            .build()?;
 
         Self::build(settings)
     }

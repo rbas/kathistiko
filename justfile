@@ -67,7 +67,7 @@ _ensure-linux-target:
 # === Deployment Commands ===
 
 # Deploy to production server (builds + uploads + restarts)
-deploy: build-linux _deploy-files _restart-service
+deploy: build-linux _deploy-files _build-snapshot _restart-service
     @echo "🚀 Deployment completed successfully!"
 
 # Deploy without building (use existing binary)
@@ -85,7 +85,13 @@ _deploy-files:
     scp target/x86_64-unknown-linux-gnu/release/dashboard rbas@nabu:/srv/kathistiko/dashboard/
     scp config.sample.toml rbas@nabu:/srv/kathistiko/dashboard/
     scp public/css/main.css rbas@nabu:/srv/kathistiko/dashboard/public/css/
+    ssh rbas@nabu 'mkdir -p /srv/kathistiko/dashboard/output'
+    scp Dockerfile.snapshot compose.yml package.json package-lock.json snapshot.js rbas@nabu:/srv/kathistiko/dashboard/
     echo "✅ Files uploaded successfully"
+
+# Build the browser snapshot image used by the unified service
+_build-snapshot:
+    ssh rbas@nabu 'cd /srv/kathistiko/dashboard && /usr/bin/podman compose build snapshot'
 
 # Restart service on remote server
 _restart-service:
