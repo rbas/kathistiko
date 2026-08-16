@@ -1,0 +1,17 @@
+[Unit]
+Description=Kathistiko Dashboard service
+Wants=network-online.target
+After=network-online.target prometheus.service
+
+[Service]
+User=rbas
+Group=rbas
+Environment=RUST_LOG=debug
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/srv/kathistiko/dashboard
+ExecStart=/srv/kathistiko/dashboard/dashboard -c /srv/kathistiko/dashboard/config.local.toml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

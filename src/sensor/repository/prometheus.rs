@@ -1,6 +1,6 @@
 use chrono::{TimeZone, Utc};
 
-use reqwest::Error as ReqwestError;
+use reqwest::{Error as ReqwestError, StatusCode};
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -14,9 +14,11 @@ pub(super) enum RepositoryError {
     #[error("Network error: {0}")]
     NetworkError(#[from] ReqwestError),
     #[error("Invalid response format")]
-    InvalidResponseFormat,
+    InvalidResponseFormat(#[source] serde_json::Error),
     #[error("Authentication failed")]
     AuthenticationFailed,
+    #[error("Prometheus returned HTTP {status}: {body}")]
+    UnexpectedStatus { status: StatusCode, body: String },
 
     #[error("Cannot create sensor due to following error {0}")]
     InvalidSensor(Errors),
@@ -91,7 +93,10 @@ async fn download_sensor_data(
 ) -> Result<ApiResponse, RepositoryError> {
     let path = r#"/api/v1/query?query={__name__%3D~"hass_sensor_unit_u0x25u0x20rh|hass_sensor_unit_celsius|hass_sensor_unit_u0x25|hass_sensor_battery_percent"%2Centity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_display_battery_percentage"}"#;
     let url = format!("{}{}", hostname, path);
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(RepositoryError::NetworkError)?;
     let response = client
         .get(url)
         .basic_auth(username, Some(password))
@@ -99,14 +104,25 @@ async fn download_sensor_data(
         .await
         .map_err(RepositoryError::NetworkError)?;
 
-    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+    let status = response.status();
+    if status == StatusCode::UNAUTHORIZED {
         return Err(RepositoryError::AuthenticationFailed);
     }
 
-    let api_response = response
-        .json::<ApiResponse>()
+    let body = response
+        .text()
         .await
-        .map_err(|_| RepositoryError::InvalidResponseFormat)?;
+        .map_err(RepositoryError::NetworkError)?;
+
+    if !status.is_success() {
+        return Err(RepositoryError::UnexpectedStatus {
+            status,
+            body: body.chars().take(200).collect(),
+        });
+    }
+
+    let api_response = serde_json::from_str::<ApiResponse>(&body)
+        .map_err(RepositoryError::InvalidResponseFormat)?;
 
     Ok(api_response)
 }

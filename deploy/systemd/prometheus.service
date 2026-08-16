@@ -1,0 +1,20 @@
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=rbas
+Group=rbas
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/srv/prometheus
+ExecStartPre=/usr/bin/podman compose -f /srv/prometheus/compose.yml pull
+ExecStart=/usr/bin/podman compose -f /srv/prometheus/compose.yml up --detach
+ExecStop=/usr/bin/podman compose -f /srv/prometheus/compose.yml down
+TimeoutStartSec=0
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

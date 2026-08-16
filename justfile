@@ -79,6 +79,24 @@ deploy-only: _deploy-files _restart-service
 deploy-full: _git-pull deploy
     @echo "🚀 Full deployment with git pull completed!"
 
+# Install production systemd units and the persistent rootless Podman runtime.
+# This is intentionally separate from normal deploys because it requires sudo.
+install-systemd:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    scp deploy/systemd/prometheus.service deploy/systemd/kathistikodashboard.service rbas@nabu:/tmp/
+    ssh -t rbas@nabu '
+        sudo cp --archive --no-clobber /etc/systemd/system/prometheus.service /etc/systemd/system/prometheus.service.pre-kathistiko-fix
+        sudo cp --archive --no-clobber /etc/systemd/system/kathistikodashboard.service /etc/systemd/system/kathistikodashboard.service.pre-kathistiko-fix
+        sudo install -o root -g root -m 0644 /tmp/prometheus.service /etc/systemd/system/prometheus.service
+        sudo install -o root -g root -m 0644 /tmp/kathistikodashboard.service /etc/systemd/system/kathistikodashboard.service
+        sudo loginctl enable-linger rbas
+        sudo systemctl daemon-reload
+        sudo systemctl enable prometheus.service kathistikodashboard.service
+        sudo systemctl restart prometheus.service
+        sudo systemctl restart kathistikodashboard.service
+    '
+
 # Upload files to server
 _deploy-files:
     #!/usr/bin/env bash

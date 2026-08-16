@@ -111,6 +111,20 @@ nohup ./dashboard > dashboard.log 2>&1 &
 
 ## Service Management
 
+### Kathistiko production units
+
+The repository contains the production dashboard and Prometheus units in
+`deploy/systemd`. Install them with:
+
+```bash
+just install-systemd
+```
+
+This command requires an interactive sudo password. It preserves the existing
+units as `*.pre-kathistiko-fix`, enables a persistent user runtime for rootless
+Podman, and restarts both services. The persistent runtime is required because
+the dashboard starts the snapshot container between SSH sessions.
+
 ### Systemd Service (Recommended)
 
 Create a systemd service file for proper process management:
