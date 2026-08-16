@@ -112,26 +112,16 @@ jobs:
             md5sum_file "$file"
           done
 
-      - name: Generate release notes
-        uses: orhun/git-cliff-action@v3
-        id: git-cliff
-        with:
-          config: cliff.toml
-          args: --latest --strip header
-        env:
-          OUTPUT: RELEASE_NOTE.md
-          GITHUB_REPO: ${{ github.repository }}
-
       # - name: Show directory structure
       #   run: ls -R
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Release ${{ github.event.inputs.tag_version || github.ref_name }}
           tag_name: ${{ github.event.inputs.tag_version || github.ref_name }}
           make_latest: true
-          body: ${{ steps.git-cliff.outputs.content }}
+          generate_release_notes: true
           files: |
             dashboard*
             checksums.txt
