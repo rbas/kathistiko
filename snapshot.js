@@ -17,6 +17,12 @@ async function main() {
     const page = await browser.newPage();
     await page.setViewport({ width: 480, height: 800 });
     await page.goto(url, { waitUntil: "networkidle0", timeout: 60_000 });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+    });
     await page.screenshot({ path: `/app/output/${outputFilename}` });
   } finally {
     await browser.close();
