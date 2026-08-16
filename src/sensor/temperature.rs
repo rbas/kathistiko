@@ -42,9 +42,7 @@ impl TryFrom<&str> for SensorName {
             "sensor.kairos_humidity" => Ok(SensorName::KairosHumidity),
             "sensor.kathistiko_temperature" => Ok(SensorName::KathistikoTemperature),
             "sensor.kathistiko_humidity" => Ok(SensorName::KathistikoHumidity),
-            "sensor.kathistiko_battery" | "sensor.kathistiko_battery_percentage" => {
-                Ok(SensorName::KathistikoBatteryPercentage)
-            }
+            "sensor.kathistiko_battery_percentage" => Ok(SensorName::KathistikoBatteryPercentage),
             _ => Err(Errors::InvalidSensorName),
         }
     }

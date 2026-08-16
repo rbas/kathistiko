@@ -89,7 +89,7 @@ async fn download_sensor_data(
     username: &str,
     password: &str,
 ) -> Result<ApiResponse, RepositoryError> {
-    let path = r#"/api/v1/query?query={entity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_battery|sensor.kathistiko_battery_percentage"}"#;
+    let path = r#"/api/v1/query?query={entity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_battery_percentage"}"#;
     let url = format!("{}{}", hostname, path);
     let client = reqwest::Client::new();
     let response = client
