@@ -71,6 +71,16 @@ section without modifying a configuration containing credentials.
 
 To see all available commands: `just --list`
 
+### ESP32 firmware
+
+The ESP32 firmware is maintained in the same repository as a PlatformIO project
+using the Arduino framework. Its existing display, Wi-Fi, MQTT, sensor, deep
+sleep, and OTA behavior is preserved.
+
+See [`firmware/README.md`](firmware/README.md) for configuration, build, and
+upload instructions. Device credentials belong only in
+`firmware/include/conf.h`, which is ignored by Git.
+
 ### Configuration
 
 The application uses TOML configuration files. Key settings include:
@@ -115,6 +125,7 @@ dashboard/
 │   ├── sensor/            # Sensor data collection
 │   ├── inbound/           # HTTP handlers and routing
 │   └── settings.rs        # Configuration management
+├── firmware/              # PlatformIO ESP32 firmware
 ├── templates/             # HTML templates (Askama)
 ├── public/               # Static assets (CSS, images)
 ├── docs/                 # Documentation
@@ -129,12 +140,14 @@ dashboard/
 - **Calendar**: iCalendar parsing with [icalendar](https://github.com/hoodie/icalendar-rs)
 - **Config**: [config-rs](https://github.com/mehcode/config-rs) for TOML configuration
 - **Async Runtime**: [Tokio](https://tokio.rs/)
+- **Firmware**: PlatformIO with the Arduino framework for ESP32
 
 ## Documentation
 
 - [Architecture Overview](docs/architecture.md) - System design and Prometheus integration
 - [Cross-Compilation Guide](docs/cross-compilation.md) - Build Linux binaries from macOS
 - [Deployment Guide](docs/deployment.md) - Production server deployment and management
+- [Firmware Guide](firmware/README.md) - ESP32 configuration, build, and upload
 - [Configuration Reference](config.sample.toml) - All available configuration options
 
 ## License

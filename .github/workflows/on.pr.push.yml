@@ -1,8 +1,9 @@
-name: Rust
+name: Build and test
 
 on:
-  pull_request_target:
-    types: [assigned, opened, synchronize, reopened]
+  pull_request:
+  push:
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -31,3 +32,18 @@ jobs:
         run: cargo build --verbose
       - name: test
         run: cargo test
+
+  build_firmware:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install PlatformIO
+        run: pip install platformio==6.1.19
+      - name: Create CI firmware configuration
+        run: cp firmware/include/conf.example.h firmware/include/conf.h
+      - name: Build ESP32 firmware
+        run: pio run --project-dir firmware

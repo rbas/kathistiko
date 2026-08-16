@@ -4,3 +4,6 @@
 /display.local.toml
 /output
 /node_modules
+/.pio
+/firmware/.pio
+/firmware/include/conf.h
