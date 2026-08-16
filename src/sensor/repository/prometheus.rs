@@ -89,7 +89,7 @@ async fn download_sensor_data(
     username: &str,
     password: &str,
 ) -> Result<ApiResponse, RepositoryError> {
-    let path = r#"/api/v1/query?query={__name__%3D~"hass_sensor_unit_u0x25u0x20rh|hass_sensor_unit_celsius|hass_sensor_unit_u0x25"%2Centity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_display_battery_percentage"}"#;
+    let path = r#"/api/v1/query?query={__name__%3D~"hass_sensor_unit_u0x25u0x20rh|hass_sensor_unit_celsius|hass_sensor_unit_u0x25|hass_sensor_battery_percent"%2Centity%3D~"sensor.kathistiko_humidity|sensor.kairos_humidity|sensor.kathistiko_temperature|sensor.kairos_temperature|sensor.kathistiko_display_battery_percentage"}"#;
     let url = format!("{}{}", hostname, path);
     let client = reqwest::Client::new();
     let response = client
@@ -227,7 +227,7 @@ mod tests {
               },
               {
                 "metric": {
-                  "__name__": "hass_sensor_unit_u0x25",
+                  "__name__": "hass_sensor_battery_percent",
                   "entity": "sensor.kathistiko_display_battery_percentage"
                 },
                 "value": [
