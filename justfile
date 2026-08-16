@@ -81,8 +81,10 @@ deploy-full: _git-pull deploy
 # Upload files to server
 _deploy-files:
     #!/usr/bin/env bash
+    set -euo pipefail
     echo "📤 Uploading files to nabu server..."
-    scp target/x86_64-unknown-linux-gnu/release/dashboard rbas@nabu:/srv/kathistiko/dashboard/
+    scp target/x86_64-unknown-linux-gnu/release/dashboard rbas@nabu:/srv/kathistiko/dashboard/dashboard.new
+    ssh rbas@nabu 'mv /srv/kathistiko/dashboard/dashboard.new /srv/kathistiko/dashboard/dashboard'
     scp config.sample.toml rbas@nabu:/srv/kathistiko/dashboard/
     scp public/css/main.css rbas@nabu:/srv/kathistiko/dashboard/public/css/
     ssh rbas@nabu 'mkdir -p /srv/kathistiko/dashboard/output'
@@ -96,8 +98,23 @@ _build-snapshot:
 # Restart service on remote server
 _restart-service:
     #!/usr/bin/env bash
+    set -euo pipefail
     echo "🔄 Restarting service on remote server..."
-    ssh -t rbas@nabu 'sudo systemctl restart kathistikodashboard.service'
+    ssh rbas@nabu '
+        old_pid=$(systemctl show kathistikodashboard.service -p MainPID --value)
+        kill -TERM "$old_pid"
+        for attempt in $(seq 1 15); do
+            new_pid=$(systemctl show kathistikodashboard.service -p MainPID --value)
+            state=$(systemctl is-active kathistikodashboard.service || true)
+            if [ "$state" = active ] && [ "$new_pid" != 0 ] && [ "$new_pid" != "$old_pid" ]; then
+                echo "Service restarted with PID $new_pid"
+                exit 0
+            fi
+            sleep 1
+        done
+        echo "Service did not restart successfully" >&2
+        exit 1
+    '
     echo "✅ Service restarted successfully"
 
 # Pull latest changes from git
