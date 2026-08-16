@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    http::{header, StatusCode},
+    http::{header, HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router,
@@ -42,14 +42,24 @@ pub fn router(state: AppState) -> Router {
 
 async fn latest_bitmap_handler(
     axum::extract::State(state): axum::extract::State<AppState>,
+    headers: HeaderMap,
 ) -> Response {
     match state.display.latest().await {
-        Some(bitmap) => (
+        Some(image) if if_none_match_matches(&headers, image.etag()) => (
+            StatusCode::NOT_MODIFIED,
             [
-                (header::CONTENT_TYPE, "application/octet-stream"),
-                (header::CACHE_CONTROL, "no-cache"),
+                (header::CACHE_CONTROL, "no-cache".to_string()),
+                (header::ETAG, image.etag().to_string()),
             ],
-            bitmap,
+        )
+            .into_response(),
+        Some(image) => (
+            [
+                (header::CONTENT_TYPE, "application/octet-stream".to_string()),
+                (header::CACHE_CONTROL, "no-cache".to_string()),
+                (header::ETAG, image.etag().to_string()),
+            ],
+            image.bitmap().to_vec(),
         )
             .into_response(),
         None => (
@@ -60,6 +70,16 @@ async fn latest_bitmap_handler(
     }
 }
 
+fn if_none_match_matches(headers: &HeaderMap, current_etag: &str) -> bool {
+    headers
+        .get_all(header::IF_NONE_MATCH)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(','))
+        .map(str::trim)
+        .any(|candidate| candidate == "*" || candidate.trim_start_matches("W/") == current_etag)
+}
+
 async fn readiness_handler(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> StatusCode {
@@ -67,5 +87,37 @@ async fn readiness_handler(
         StatusCode::NO_CONTENT
     } else {
         StatusCode::SERVICE_UNAVAILABLE
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::{header, HeaderMap, HeaderValue};
+
+    use super::if_none_match_matches;
+
+    #[test]
+    fn matches_current_etag_in_if_none_match() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::IF_NONE_MATCH,
+            HeaderValue::from_static("\"current\""),
+        );
+
+        assert!(if_none_match_matches(&headers, "\"current\""));
+        assert!(!if_none_match_matches(&headers, "\"other\""));
+    }
+
+    #[test]
+    fn supports_etag_lists_weak_validators_and_wildcard() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::IF_NONE_MATCH,
+            HeaderValue::from_static("\"old\", W/\"current\""),
+        );
+        assert!(if_none_match_matches(&headers, "\"current\""));
+
+        headers.insert(header::IF_NONE_MATCH, HeaderValue::from_static("*"));
+        assert!(if_none_match_matches(&headers, "\"anything\""));
     }
 }

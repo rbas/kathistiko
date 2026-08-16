@@ -8,12 +8,12 @@
 #include <SPI.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <Preferences.h>
+#include <new>
 #include "Display_EPD_W21_spi.h"
 #include "Display_EPD_W21.h"
 #include "ota.h"
 #include <MQTT.h>
-#include <esp_system.h> // To use RTC memory
-// #include <ESP32AnalogRead.h>
 
 #include "sensors.h"
 #include "battery.h"
@@ -29,7 +29,15 @@ static_assert(MOSI == 23, "Unexpected MOSI pin");
 
 IPAddress getIp();
 int8_t getWifiStrength();
-uint8_t *fetchData(const String &url, size_t &dataSize);
+
+enum class ImageFetchResult {
+  Updated,
+  NotModified,
+  Failed,
+};
+
+ImageFetchResult fetchData(const String &url, const String &currentEtag,
+                           uint8_t *&data, size_t &dataSize, String &responseEtag);
 
 // MQTT path's
 const String MQTT_TOPIC_BASE_PATH = "/home/" + String(HOSTNAME);
@@ -41,7 +49,8 @@ const String MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH = MQTT_TOPIC_BASE_PATH + "/
 const String MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH = MQTT_TOPIC_BASE_PATH + "/environment/humidity";
 const String MQTT_TOPIC_ERROR_REPORT_PATH = MQTT_TOPIC_BASE_PATH + "/error";
 
-RTC_DATA_ATTR unsigned long wakeUpCounter = 0; // Counter to track the number of wake-ups
+const char *DISPLAY_PREFERENCES_NAMESPACE = "display";
+const char *DISPLAY_ETAG_KEY = "etag";
 
 WiFiClient wiFiClient;
 MQTTClient client(1024);
@@ -205,88 +214,132 @@ void initDisplay()
 
 bool downloadAndRenderImage()
 {
-  size_t dataSize = 0;
-  uint8_t *data = fetchData(String(IMAGE_SERVER_URL), dataSize);
-  bool successfullDownlaod = true;
+  Preferences preferences;
+  String currentEtag;
+  if (preferences.begin(DISPLAY_PREFERENCES_NAMESPACE, true)) {
+    currentEtag = preferences.getString(DISPLAY_ETAG_KEY, "");
+    preferences.end();
+  } else {
+    Serial.println("Failed to open display preferences for reading.");
+  }
 
-  if (data != nullptr && dataSize > 0)
+  size_t dataSize = 0;
+  uint8_t *data = nullptr;
+  String responseEtag;
+  const ImageFetchResult result =
+      fetchData(String(IMAGE_SERVER_URL), currentEtag, data, dataSize, responseEtag);
+
+  if (result == ImageFetchResult::NotModified) {
+    Serial.println("Display image is unchanged. Skipping download and refresh.");
+    return true;
+  }
+
+  if (result == ImageFetchResult::Updated && data != nullptr && dataSize == EPD_ARRAY)
   {
-    // Call printHexData to print the fetched binary data in hexadecimal format
     Serial.println("Data were successfully fetched. Going to render image on screen.");
     initDisplay();
-    // Initialize e-paper display
-    EPD_Init(); // Full screen refresh initialization.
+    EPD_Init();
     EPD_WhiteScreen_ALL(data);
     EPD_DeepSleep();
-  }
-  else
-  {
-    Serial.println("Failed to fetch binary data.");
-    successfullDownlaod = false;
+
+    if (!responseEtag.isEmpty()) {
+      if (preferences.begin(DISPLAY_PREFERENCES_NAMESPACE, false)) {
+        if (preferences.putString(DISPLAY_ETAG_KEY, responseEtag) == 0) {
+          Serial.println("Failed to persist display ETag.");
+        }
+        preferences.end();
+      } else {
+        Serial.println("Failed to open display preferences for writing.");
+      }
+    }
+
+    delete[] data;
+    return true;
   }
 
-  // Don't forget to free the allocated memory after use
   delete[] data;
-
-  return successfullDownlaod;
+  Serial.println("Failed to fetch a valid display image.");
+  return false;
 }
 
-uint8_t *fetchData(const String &url, size_t &dataSize)
+ImageFetchResult fetchData(const String &url, const String &currentEtag,
+                           uint8_t *&data, size_t &dataSize, String &responseEtag)
 {
   HTTPClient http;
-  http.begin(url); // URL to fetch data from
+  const char *responseHeaders[] = {"ETag"};
+  http.begin(url);
+  http.collectHeaders(responseHeaders, 1);
+  if (!currentEtag.isEmpty()) {
+    http.addHeader("If-None-Match", currentEtag);
+  }
 
-  int httpCode = http.GET();   // Send the GET request
-  uint8_t *response = nullptr; // Pointer to store the response
-  dataSize = 0;                // Variable to store the size of the fetched data
+  const int httpCode = http.GET();
+  data = nullptr;
+  dataSize = 0;
+  responseEtag = "";
 
-  if (httpCode > 0)
-  {
-    // HTTP header has been sent and Server response header has been handled
-    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+  if (httpCode <= 0) {
+    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+    http.end();
+    return ImageFetchResult::Failed;
+  }
 
-    if (httpCode == HTTP_CODE_OK)
-    {
-      // Get length of document (is -1 when Server sends no Content-Length header)
-      int len = http.getSize();
-      response = new uint8_t[len]; // Allocate memory for the response
-      size_t totalBytesRead = 0;
-      uint8_t buff[128] = {0};
-      WiFiClient *stream = http.getStreamPtr();
+  Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+  if (httpCode == HTTP_CODE_NOT_MODIFIED) {
+    http.end();
+    return ImageFetchResult::NotModified;
+  }
 
-      // Read all data from server
-      while (http.connected() && (len > 0 || len == -1))
-      {
-        size_t size = stream->available();
+  if (httpCode != HTTP_CODE_OK) {
+    http.end();
+    return ImageFetchResult::Failed;
+  }
 
-        if (size)
-        {
-          int bytesRead = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+  const int contentLength = http.getSize();
+  if (contentLength != EPD_ARRAY) {
+    Serial.printf("Unexpected image size: %d bytes; expected %d.\n", contentLength, EPD_ARRAY);
+    http.end();
+    return ImageFetchResult::Failed;
+  }
 
-          // Append the received data to the response buffer
-          memcpy(response + totalBytesRead, buff, bytesRead);
-          totalBytesRead += bytesRead;
+  data = new (std::nothrow) uint8_t[EPD_ARRAY];
+  if (data == nullptr) {
+    Serial.println("Failed to allocate display image buffer.");
+    http.end();
+    return ImageFetchResult::Failed;
+  }
 
-          if (len > 0)
-          {
-            len -= bytesRead;
-          }
-        }
-        delay(1);
+  WiFiClient *stream = http.getStreamPtr();
+  unsigned long lastDataAt = millis();
+  while (dataSize < EPD_ARRAY && (http.connected() || stream->available())) {
+    const size_t available = stream->available();
+    if (available > 0) {
+      const size_t remaining = EPD_ARRAY - dataSize;
+      const size_t requested = min(available, remaining);
+      const size_t bytesRead = stream->readBytes(data + dataSize, requested);
+      dataSize += bytesRead;
+      lastDataAt = millis();
+    } else {
+      if (millis() - lastDataAt > 15000) {
+        Serial.println("Timed out while downloading display image.");
+        break;
       }
-
-      dataSize = totalBytesRead; // Store the total size of the fetched data
-      Serial.println();
-      Serial.print("[HTTP] connection closed or file end.\n");
+      delay(1);
     }
   }
-  else
-  {
-    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+
+  responseEtag = http.header("ETag");
+  http.end();
+  if (dataSize != EPD_ARRAY) {
+    Serial.printf("Incomplete image: %u bytes; expected %d.\n",
+                  static_cast<unsigned int>(dataSize), EPD_ARRAY);
+    delete[] data;
+    data = nullptr;
+    dataSize = 0;
+    return ImageFetchResult::Failed;
   }
 
-  http.end();
-  return response; // Return the pointer to the fetched binary data
+  return ImageFetchResult::Updated;
 }
 
 // Function to print binary data in hexadecimal format
@@ -308,9 +361,6 @@ void printHexData(const uint8_t *data, size_t dataSize)
 
 void setup()
 {
-  // Increment the wake-up counter (stored in RTC memory)
-  wakeUpCounter++;
-
   Serial.begin(115200);
   Serial.println();
   Serial.println();
@@ -372,14 +422,7 @@ void loop()
   {
     doSensorsWork();
     Serial.printf("currentMillis %lu\n", currentMillis);
-    Serial.printf("wakeUpCounter %lu\n", wakeUpCounter);
-
-    // Every 4th wake-up (i.e., after 1 hour), update the display
-    if (wakeUpCounter == 1 || wakeUpCounter >= 12) {
-      doDisplayWork();
-      wakeUpCounter = 0; // Reset the wake-up counter after displaying
-    }
-
+    doDisplayWork();
 
     // If OTA got enabled, it has to be handled
     if (OTAEnabled == true)

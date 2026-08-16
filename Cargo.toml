@@ -42,6 +42,7 @@ askama_axum = "0.4.0"
 serde_json = "1.0.140"
 thiserror = "2.0.12"
 image = { version = "0.25.5", default-features = false, features = ["png"] }
+sha2 = "0.10.9"
 [dependencies.config]
 version = "0.15.16"
 features = ["toml"]

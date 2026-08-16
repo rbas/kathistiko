@@ -23,7 +23,8 @@ bitmap at `/latest`.
 Production routes:
 
 - `/calendar` renders the browser dashboard.
-- `/latest` preserves the existing ESP32 firmware contract.
+- `/latest` serves the bitmap with an `ETag` and supports conditional
+  `If-None-Match` requests from the ESP32.
 - `/assets/converted_image.png` exposes the converted image for diagnostics.
 - `/health/live` reports whether the HTTP service is running.
 - `/health/ready` reports readiness after the first display image is available.

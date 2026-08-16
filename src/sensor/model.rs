@@ -7,7 +7,7 @@ pub struct Battery {
 
 impl Battery {
     pub fn percentage(&self) -> u8 {
-        self.percentage_sensor.value.round().clamp(0.0, 100.0) as u8
+        ((self.percentage_sensor.value / 5.0).round() * 5.0).clamp(0.0, 100.0) as u8
     }
 }
 
@@ -29,12 +29,12 @@ pub struct LivingRoom {
 }
 
 impl LivingRoom {
-    pub fn temperature(&self) -> f32 {
-        self.temperature_sensor.value
+    pub fn temperature(&self) -> i16 {
+        self.temperature_sensor.value.round() as i16
     }
 
-    pub fn humidity(&self) -> f32 {
-        self.humidity_sensor.value
+    pub fn humidity(&self) -> u8 {
+        self.humidity_sensor.value.round().clamp(0.0, 100.0) as u8
     }
 }
 
@@ -59,12 +59,12 @@ pub struct Outdoor {
 }
 
 impl Outdoor {
-    pub fn temperature(&self) -> f32 {
-        self.temperature_sensor.value
+    pub fn temperature(&self) -> i16 {
+        self.temperature_sensor.value.round() as i16
     }
 
-    pub fn humidity(&self) -> f32 {
-        self.humidity_sensor.value
+    pub fn humidity(&self) -> u8 {
+        self.humidity_sensor.value.round().clamp(0.0, 100.0) as u8
     }
 }
 
@@ -106,9 +106,34 @@ mod tests {
 
     #[test]
     fn battery_percentage_is_rounded_and_bounded() {
-        assert_eq!(battery_with_percentage(78.4).percentage(), 78);
-        assert_eq!(battery_with_percentage(78.6).percentage(), 79);
+        assert_eq!(battery_with_percentage(77.4).percentage(), 75);
+        assert_eq!(battery_with_percentage(77.5).percentage(), 80);
+        assert_eq!(battery_with_percentage(78.6).percentage(), 80);
         assert_eq!(battery_with_percentage(-5.0).percentage(), 0);
         assert_eq!(battery_with_percentage(105.0).percentage(), 100);
+    }
+
+    #[test]
+    fn living_room_values_are_rounded_for_display() {
+        let room = LivingRoom::try_from(vec![
+            SensorData::new(SensorName::KathistikoTemperature, 21.6, Utc::now()),
+            SensorData::new(SensorName::KathistikoHumidity, 48.4, Utc::now()),
+        ])
+        .unwrap();
+
+        assert_eq!(room.temperature(), 22);
+        assert_eq!(room.humidity(), 48);
+    }
+
+    #[test]
+    fn outdoor_values_are_rounded_for_display() {
+        let outdoor = Outdoor::try_from(vec![
+            SensorData::new(SensorName::KairosTemperature, -2.6, Utc::now()),
+            SensorData::new(SensorName::KairosHumidity, 101.0, Utc::now()),
+        ])
+        .unwrap();
+
+        assert_eq!(outdoor.temperature(), -3);
+        assert_eq!(outdoor.humidity(), 100);
     }
 }

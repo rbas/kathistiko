@@ -39,6 +39,15 @@ retained MQTT values to:
 The percentage is an estimate derived from a typical single-cell Li-Po discharge
 curve; voltage is retained separately for diagnostics and calibration. Firmware
 also publishes Home Assistant MQTT discovery records for both sensors. The
-dashboard displays the percentage as small `BAT 78%` text in the bottom-right
+dashboard displays the percentage in 5% steps as small `BAT 80%` text in the bottom-right
 corner when `sensor.<hostname>_display_battery_percentage` is available through
 its Prometheus data source.
+
+## Conditional display refresh
+
+Every 30-minute wake publishes sensor telemetry and conditionally requests
+`/latest`. The service identifies the exact packed bitmap with an HTTP `ETag`.
+The firmware stores the ETag in ESP32 NVS and sends it in `If-None-Match` on the
+next wake. A `304 Not Modified` response skips the 48,000-byte download and does
+not power the e-paper panel. A changed image is downloaded, validated, rendered,
+and only then recorded as the displayed ETag.
