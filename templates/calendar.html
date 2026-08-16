@@ -2,11 +2,11 @@
 {% block body %}
 <main class="dashboard">
     <header class="masthead">
-        <div class="masthead-copy">
-            <div class="month-name">{{ current_date.format("%B") }}</div>
-            <div class="weekday">{{ current_date.format("%A") }}</div>
-        </div>
         <div class="current-day">{{ current_date.day() }}</div>
+        <div class="masthead-copy">
+            <div class="weekday">{{ current_date.format("%A") }}</div>
+            <div class="month-name">{{ current_date.format("%B") }}</div>
+        </div>
     </header>
 
     <div class="dashboard-content">
@@ -38,31 +38,20 @@
             <section class="agenda" aria-label="Upcoming calendar events">
                 {% for event in events %}
                     <article class="agenda-event">
-                        <div class="agenda-title-row">
-                            <h2>{{ event.display_summary() }}</h2>
-                            <span class="agenda-date">{{ event.start_date_short_week_day() }} {{ event.start_date_day() }}</span>
+                        <div class="agenda-date-rail">
+                            {% if event.occurs_on(current_date.date_naive()) %}
+                                <span>TODAY</span>
+                                <strong>{{ current_date.day() }}</strong>
+                            {% else %}
+                                <span>{{ event.start_date_short_week_day() }}</span>
+                                <strong>{{ event.start_date_day() }}</strong>
+                            {% endif %}
                         </div>
-                        <div class="agenda-details">
-                            <span>
-                                {{ event.start_date_day() }}. {{ event.start_date_month() }}.
-                                {% if !event.is_day_event() %}
-                                    {% if event.end_date.is_some() %}
-                                        &ndash; {{ event.end_date_day().unwrap() }}. {{ event.end_date_month().unwrap() }}.
-                                    {% endif %}
-                                {% endif %}
-                            </span>
-                            <span>
-                                {% if event.start_time.is_some() %}
-                                    {{ event.start_time.unwrap().format("%H:%M") }}
-                                    {% if event.end_time.is_some() %}
-                                        &ndash; {{ event.end_time.unwrap().format("%H:%M") }}
-                                    {% endif %}
-                                {% else if !event.is_day_event() && event.number_of_days() > 1 %}
-                                    {{ event.number_of_days() }} days
-                                {% else %}
-                                    All day
-                                {% endif %}
-                            </span>
+                        <div class="agenda-copy">
+                            <h2>{{ event.display_summary() }}</h2>
+                            {% if let Some(detail) = event.display_detail() %}
+                                <p>{{ detail }}</p>
+                            {% endif %}
                         </div>
                     </article>
                 {% endfor %}

@@ -8,7 +8,7 @@ use std::{
 
 use std::hash::{Hash, Hasher};
 
-use chrono::{Days, NaiveDate, NaiveTime};
+use chrono::{Datelike, Days, NaiveDate, NaiveTime};
 use icalendar::{Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event};
 
 #[derive(Debug)]
@@ -62,6 +62,41 @@ impl Item {
     // Method to check if start_date is today
     pub fn start_date_month(&self) -> String {
         self.start_date.format("%m").to_string()
+    }
+
+    pub fn occurs_on(&self, date: NaiveDate) -> bool {
+        let end_date = self.end_date.unwrap_or(self.start_date);
+        self.start_date <= date && date <= end_date
+    }
+
+    pub fn display_detail(&self) -> Option<String> {
+        if let Some(end_date) = self.end_date.filter(|date| *date > self.start_date) {
+            let date_range = if self.start_date.month() == end_date.month() {
+                format!(
+                    "{}–{} {}",
+                    self.start_date.format("%d"),
+                    end_date.format("%d"),
+                    end_date.format("%b").to_string().to_uppercase()
+                )
+            } else {
+                format!(
+                    "{}–{}",
+                    self.start_date.format("%d %b").to_string().to_uppercase(),
+                    end_date.format("%d %b").to_string().to_uppercase()
+                )
+            };
+
+            return Some(date_range);
+        }
+
+        self.start_time.map(|start_time| match self.end_time {
+            Some(end_time) => format!(
+                "{}–{}",
+                start_time.format("%H:%M"),
+                end_time.format("%H:%M")
+            ),
+            None => start_time.format("%H:%M").to_string(),
+        })
     }
 
     pub fn end_date_week_day(&self) -> Option<String> {
@@ -357,6 +392,54 @@ mod tests {
         );
 
         assert_eq!(item.display_summary(), "Sněžka · Маник");
+    }
+
+    #[test]
+    fn display_detail_omits_redundant_all_day_label() {
+        let item = Item::new(
+            "All day".to_string(),
+            NaiveDate::from_ymd_opt(2026, 8, 16).unwrap(),
+            None,
+            Some(NaiveDate::from_ymd_opt(2026, 8, 16).unwrap()),
+            None,
+        );
+
+        assert_eq!(item.display_detail(), None);
+    }
+
+    #[test]
+    fn display_detail_shows_time_or_multi_day_range() {
+        let timed = Item::new(
+            "Timed".to_string(),
+            NaiveDate::from_ymd_opt(2026, 8, 16).unwrap(),
+            Some(NaiveTime::from_hms_opt(17, 0, 0).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2026, 8, 16).unwrap()),
+            Some(NaiveTime::from_hms_opt(18, 0, 0).unwrap()),
+        );
+        let multi_day = Item::new(
+            "Trip".to_string(),
+            NaiveDate::from_ymd_opt(2026, 8, 21).unwrap(),
+            None,
+            Some(NaiveDate::from_ymd_opt(2026, 8, 23).unwrap()),
+            None,
+        );
+
+        assert_eq!(timed.display_detail().as_deref(), Some("17:00–18:00"));
+        assert_eq!(multi_day.display_detail().as_deref(), Some("21–23 AUG"));
+    }
+
+    #[test]
+    fn event_remains_current_for_its_entire_date_range() {
+        let item = Item::new(
+            "Trip".to_string(),
+            NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+            None,
+            Some(NaiveDate::from_ymd_opt(2026, 8, 17).unwrap()),
+            None,
+        );
+
+        assert!(item.occurs_on(NaiveDate::from_ymd_opt(2026, 8, 16).unwrap()));
+        assert!(!item.occurs_on(NaiveDate::from_ymd_opt(2026, 8, 18).unwrap()));
     }
 
     #[test]

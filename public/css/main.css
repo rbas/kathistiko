@@ -25,56 +25,53 @@ body {
 }
 
 .masthead {
-  height: 126px;
+  height: 136px;
   display: flex;
-  justify-content: space-between;
-  padding: 16px 20px 13px;
+  align-items: center;
+  gap: 18px;
+  padding: 11px 20px 10px;
   background: #000;
   color: #fff;
 }
 
+.current-day {
+  flex: none;
+  font-size: 104px;
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -6px;
+}
+
 .masthead-copy {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: #fff;
+  min-width: 0;
+  padding-top: 5px;
+}
+
+.weekday {
+  font-family: "Liberation Sans Narrow", "Liberation Sans", Arial, sans-serif;
+  font-size: 45px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .month-name,
 .sensor-label,
-.trash-status,
-.agenda-date {
+.trash-status {
   font-family: "Liberation Sans", Arial, sans-serif;
   font-weight: 700;
   letter-spacing: 1.3px;
 }
 
 .month-name {
-  font-size: 19px;
+  margin-top: 10px;
+  font-size: 20px;
+  line-height: 1;
   text-transform: uppercase;
 }
 
-.weekday {
-  font-family: "Liberation Sans", Arial, sans-serif;
-  font-size: 60px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -1.5px;
-}
-
-.current-day {
-  align-self: center;
-  color: #fff;
-  font-size: 84px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -4px;
-}
-
 .dashboard-content {
-  height: 586px;
-  padding: 10px 20px 0;
+  height: 576px;
+  padding: 8px 18px 0;
   overflow: hidden;
 }
 
@@ -83,16 +80,30 @@ body {
 }
 
 .trash-task {
+  position: relative;
   min-height: 60px;
   margin-bottom: 8px;
-  padding: 8px 10px;
+  padding: 7px 10px;
+  overflow: hidden;
   border: 2px solid #000;
-  font-family: "Liberation Sans", Arial, sans-serif;
 }
 
 .trash-task--tomorrow {
-  border-width: 4px;
-  padding: 6px 8px;
+  padding-left: 18px;
+  border-width: 3px;
+}
+
+.trash-task--tomorrow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 9px;
+  border-right: 2px solid #000;
+  background-image: radial-gradient(#000 1.15px, transparent 1.15px);
+  background-position: 0 0;
+  background-size: 4px 4px;
 }
 
 .trash-task--today {
@@ -114,8 +125,12 @@ body {
 }
 
 .trash-task-row strong {
+  min-width: 0;
+  overflow: hidden;
   font-size: 21px;
   line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trash-task-row span {
@@ -125,50 +140,76 @@ body {
 }
 
 .agenda-event {
-  min-height: 68px;
-  padding: 10px 0 9px;
-  border-bottom: 2px solid #000;
+  position: relative;
+  height: 78px;
+  display: grid;
+  grid-template-columns: 58px 1fr;
 }
 
-.agenda-title-row,
-.agenda-details {
+.agenda-event::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: #000;
+}
+
+.agenda-date-rail {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.agenda-title-row {
-  align-items: baseline;
+.agenda-date-rail span {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.5px;
 }
 
-.agenda-title-row h2 {
+.agenda-date-rail strong {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 0.88;
+}
+
+.agenda-copy {
+  position: relative;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 14px;
+}
+
+.agenda-copy::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  background: #000;
+}
+
+.agenda-copy h2 {
   overflow: hidden;
-  font-family: "Liberation Sans", Arial, sans-serif;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.agenda-date {
-  flex: none;
-  font-size: 11px;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-
-.agenda-details {
+.agenda-copy p {
   margin-top: 7px;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1;
-}
-
-.agenda-details span:last-child {
-  flex: none;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .sensor-footer {
