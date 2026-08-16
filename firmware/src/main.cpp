@@ -9,6 +9,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
+#include <esp_system.h>
 #include <new>
 #include "Display_EPD_W21_spi.h"
 #include "Display_EPD_W21.h"
@@ -51,11 +52,17 @@ const String MQTT_TOPIC_ERROR_REPORT_PATH = MQTT_TOPIC_BASE_PATH + "/error";
 
 const char *DISPLAY_PREFERENCES_NAMESPACE = "display";
 const char *DISPLAY_ETAG_KEY = "etag";
+constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 20000;
+constexpr unsigned long MQTT_CONNECT_TIMEOUT_MS = 15000;
+constexpr unsigned long HTTP_CONNECT_TIMEOUT_MS = 10000;
+constexpr unsigned long HTTP_READ_TIMEOUT_MS = 15000;
+constexpr unsigned long OTA_SESSION_TIMEOUT_MS = 10UL * 60UL * 1000UL;
 
 WiFiClient wiFiClient;
 MQTTClient client(1024);
 
 bool OTAEnabled = false;
+unsigned long otaStartedAt = 0;
 
 void checkOTAStatus(String status)
 {
@@ -63,6 +70,7 @@ void checkOTAStatus(String status)
   {
     Serial.println("Device should switch to OTA ");
     OTAEnabled = true;
+    otaStartedAt = millis();
     setupOTA(HOSTNAME, OTA_PASSWORD);
   }
   else
@@ -81,17 +89,24 @@ void messageReceived(String &topic, String &payload)
   }
 }
 
-void connectToMQTT()
+bool connectToMQTT()
 {
   client.begin(MQTT_SERVER, MQTT_SERVER_PORT, wiFiClient);
   client.onMessage(messageReceived);
+  client.setTimeout(3000);
   Serial.print("\nConnecting to mqtt...");
-  while (!client.connect(HOSTNAME, MQTT_USERNAME, MQTT_PASSWORD))
+  const unsigned long startedAt = millis();
+  while (millis() - startedAt < MQTT_CONNECT_TIMEOUT_MS)
   {
+    if (client.connect(HOSTNAME, MQTT_USERNAME, MQTT_PASSWORD)) {
+      Serial.println("");
+      return true;
+    }
     Serial.print(".");
     delay(1000);
   }
-  Serial.println("");
+  Serial.println(" timed out");
+  return false;
 }
 
 void subscribeToConfigChannel()
@@ -132,8 +147,12 @@ void publishSensorsData(SensorData &data)
   const BatteryData battery = readBattery();
 
   client.publish(MQTT_TOPIC_WIFI_STRENGTH_PATH, String(getWifiStrength()));
-  client.publish(MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH, String(data.temperature));
-  client.publish(MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH, String(data.humidity));
+  if (data.valid) {
+    client.publish(MQTT_TOPIC_ENVIRONMENT_TEMPERATURE_PATH, String(data.temperature));
+    client.publish(MQTT_TOPIC_ENVIRONMENT_HUMIDITY_PATH, String(data.humidity));
+  } else {
+    Serial.println("Skipping invalid room sensor values");
+  }
   client.publish(MQTT_TOPIC_BATTERY_VOLTAGE_PATH, String(battery.voltage, 3), true, 1);
   if (battery.percentageValid) {
     client.publish(MQTT_TOPIC_BATTERY_PERCENTAGE_PATH, String(battery.percentage), true, 1);
@@ -146,16 +165,23 @@ void publishSensorsData(SensorData &data)
 }
 void reportDownloadError(String message)
 {
-  client.publish(MQTT_TOPIC_ERROR_REPORT_PATH, message);
+  if (client.connected()) {
+    client.publish(MQTT_TOPIC_ERROR_REPORT_PATH, message);
+  }
 }
 
 // Function to go to deep sleep for a specified number of seconds
 void goToSleep(int seconds)
 {
+  if (client.connected()) {
+    client.disconnect();
+  }
   WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
   delay(1);
-  Serial.println("ESP in sleep mode");
-  esp_sleep_enable_timer_wakeup(seconds * 1000000);
+  Serial.printf("ESP entering deep sleep for %d seconds\n", seconds);
+  esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(seconds) * 1000000ULL);
+  Serial.flush();
   delay(100);
   esp_deep_sleep_start();
 }
@@ -168,9 +194,12 @@ bool connectToWiFi()
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("kathistiko");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED)
-  {
-    return false;
+  const unsigned long startedAt = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - startedAt >= WIFI_CONNECT_TIMEOUT_MS) {
+      return false;
+    }
+    delay(250);
   }
   Serial.println("WiFi connected");
   const String ipAddress = getIp().toString();
@@ -238,9 +267,18 @@ bool downloadAndRenderImage()
   {
     Serial.println("Data were successfully fetched. Going to render image on screen.");
     initDisplay();
-    EPD_Init();
-    EPD_WhiteScreen_ALL(data);
-    EPD_DeepSleep();
+    const bool initialized = EPD_Init();
+    const bool rendered = initialized && EPD_WhiteScreen_ALL(data);
+    if (rendered && !EPD_DeepSleep()) {
+      Serial.println("Failed to put e-paper controller into deep sleep");
+    }
+    digitalWrite(POWER, LOW);
+
+    if (!rendered) {
+      delete[] data;
+      Serial.println("Failed to render display before timeout");
+      return false;
+    }
 
     if (!responseEtag.isEmpty()) {
       if (preferences.begin(DISPLAY_PREFERENCES_NAMESPACE, false)) {
@@ -268,6 +306,8 @@ ImageFetchResult fetchData(const String &url, const String &currentEtag,
   HTTPClient http;
   const char *responseHeaders[] = {"ETag"};
   http.begin(url);
+  http.setConnectTimeout(HTTP_CONNECT_TIMEOUT_MS);
+  http.setTimeout(HTTP_READ_TIMEOUT_MS);
   http.collectHeaders(responseHeaders, 1);
   if (!currentEtag.isEmpty()) {
     http.addHeader("If-None-Match", currentEtag);
@@ -373,14 +413,22 @@ void setup()
     delay(1000);
   }
   Serial.println("Initialization.... ");
+  Serial.printf("Reset reason: %d; wake cause: %d\n",
+                static_cast<int>(esp_reset_reason()),
+                static_cast<int>(esp_sleep_get_wakeup_cause()));
 
   // Connect to Wi-Fi
   if (!connectToWiFi())
   {
     Serial.println("Cannot connect to WiFi");
+    goToSleep(SLEEP_SECONDS);
+    return;
   }
 
-  connectToMQTT();
+  if (!connectToMQTT()) {
+    goToSleep(SLEEP_SECONDS);
+    return;
+  }
   subscribeToConfigChannel();
   publishHomeAssistantDiscovery();
 }
@@ -412,6 +460,12 @@ void loop()
 
   if (OTAEnabled == true)
   {
+    if (millis() - otaStartedAt >= OTA_SESSION_TIMEOUT_MS) {
+      Serial.println("OTA session timed out");
+      OTAEnabled = false;
+      goToSleep(SLEEP_SECONDS);
+      return;
+    }
     OTAHandler();
     Serial.print("Listening on: http://");
     Serial.print(getIp());

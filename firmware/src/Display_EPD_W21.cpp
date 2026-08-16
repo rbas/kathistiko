@@ -5,15 +5,23 @@ unsigned char PartImage[1000];//Define Partial canvas space
 
 ////////////////////////////////////E-paper demo//////////////////////////////////////////////////////////
 //Busy function
-void lcd_chkstatus(void)
+bool lcd_chkstatus(void)
 {
-  while(1)
+  constexpr unsigned long busyTimeoutMs = 60000;
+  const unsigned long startedAt = millis();
+  while (isEPD_W21_BUSY != 1)
   {  //=0 BUSY
-     if(isEPD_W21_BUSY==1) break;
+    if (millis() - startedAt >= busyTimeoutMs)
+    {
+      Serial.println("Timed out waiting for e-paper BUSY pin");
+      return false;
+    }
+    delay(1);
   }
+  return true;
 }
 //Full screen refresh initialization
-void EPD_Init(void)
+bool EPD_Init(void)
 {
   EPD_W21_RST_0;  // Module reset
   delay(10);//At least 10ms delay
@@ -35,7 +43,7 @@ void EPD_Init(void)
 
   EPD_W21_WriteCMD(0x04); //POWER ON
   delay(100);
-  lcd_chkstatus();        //waiting for the electronic paper IC to release the idle signal
+  if (!lcd_chkstatus()) return false; //waiting for the electronic paper IC to release the idle signal
 
   EPD_W21_WriteCMD(0X00);     //PANNEL SETTING
   EPD_W21_WriteDATA(0x1F);   //KW-3f   KWR-2F BWROTP 0f BWOTP 1f
@@ -56,6 +64,7 @@ void EPD_Init(void)
   EPD_W21_WriteCMD(0X60);     //TCON SETTING
   EPD_W21_WriteDATA(0x22);
 
+  return true;
 }
 //Fast refresh 1 initialization
 void EPD_Init_Fast(void)
@@ -111,17 +120,17 @@ void EPD_Init_Part(void)
 
 //////////////////////////////Display Update Function///////////////////////////////////////////////////////
 //Full screen refresh update function
-void EPD_Update(void)
+bool EPD_Update(void)
 {
   //Refresh
   EPD_W21_WriteCMD(0x12);   //DISPLAY REFRESH
   delay(1);              //!!!The delay here is necessary, 200uS at least!!!
-  lcd_chkstatus();          //waiting for the electronic paper IC to release the idle signal
+  return lcd_chkstatus();   //waiting for the electronic paper IC to release the idle signal
 }
 
 //////////////////////////////Display Data Transfer Function////////////////////////////////////////////
 //Full screen refresh display function
-void EPD_WhiteScreen_ALL(const unsigned char *datas)
+bool EPD_WhiteScreen_ALL(const unsigned char *datas)
 {
    unsigned int i;
   EPD_W21_WriteCMD(0x10);  //write old data
@@ -134,7 +143,7 @@ void EPD_WhiteScreen_ALL(const unsigned char *datas)
    {
      EPD_W21_WriteDATA(datas[i]);
    }
-   EPD_Update();
+   return EPD_Update();
 }
 //Fast refresh display function
 void EPD_WhiteScreen_ALL_Fast(const unsigned char *datas)
@@ -295,15 +304,16 @@ void EPD_Dis_PartAll(const unsigned char * datas)
 
 }
 //Deep sleep function
-void EPD_DeepSleep(void)
+bool EPD_DeepSleep(void)
 {
     EPD_W21_WriteCMD(0X50);  //VCOM AND DATA INTERVAL SETTING
     EPD_W21_WriteDATA(0xf7); //WBmode:VBDF 17|D7 VBDW 97 VBDB 57    WBRmode:VBDF F7 VBDW 77 VBDB 37  VBDR B7
 
     EPD_W21_WriteCMD(0X02);   //power off
-    lcd_chkstatus();          //waiting for the electronic paper IC to release the idle signal
+    if (!lcd_chkstatus()) return false; //waiting for the electronic paper IC to release the idle signal
     EPD_W21_WriteCMD(0X07);   //deep sleep
     EPD_W21_WriteDATA(0xA5);
+    return true;
 }
 
 //Partial refresh write address and data

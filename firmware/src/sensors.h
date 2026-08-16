@@ -8,11 +8,11 @@ Adafruit_SHT4x sht4 = Adafruit_SHT4x();
 struct SensorData {
   float temperature;
   float humidity;
+  bool valid;
 };
 
 SensorData readSensors() {
-  while (!Serial) {}  // Wait
-  SensorData data;
+  SensorData data{0.0f, 0.0f, false};
 
   if (!sht4.begin()) {
     Serial.println("SHT4x not found");
@@ -25,7 +25,10 @@ SensorData readSensors() {
 
   sensors_event_t humidity, temp;  // temperature and humidity variables
 
-  sht4.getEvent(&humidity, &temp);
+  if (!sht4.getEvent(&humidity, &temp)) {
+    Serial.println("Failed to read SHT4x sensor data");
+    return data;
+  }
   Serial.print("Temperature: ");
   Serial.print(temp.temperature);
   Serial.println(" degC");
@@ -35,6 +38,7 @@ SensorData readSensors() {
 
   data.humidity = humidity.relative_humidity;
   data.temperature = temp.temperature;
+  data.valid = true;
 
   return data;
 }
